@@ -1,12 +1,6 @@
 const config = require('../../config')
 
-const dataDB_Prod = {
-    host: 'sql487.main-hosting.eu',
-    user: 'u915966213_reucord',
-    password: 'Reucord-DMED-2020',
-    port: 3306,
-    database: 'u915966213_reucord'
-}
+const dataDB_Prod = require('./keysDB')
 
 const dataDB_Dev = {
     host: 'localhost',
