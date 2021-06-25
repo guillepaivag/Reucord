@@ -1,0 +1,37 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "environmentProd": "firebase functions:config:set config.environment=production && firebase functions:config:get > env.json && firebase functions:config:get",
+    "environmentDev": "firebase functions:config:set config.environment=development && firebase functions:config:get > env.json && firebase functions:config:get",
+    "serveProd": "npm run environmentProd && npm run serve",
+    "serveDev": "npm run environmentDev && npm run serve",
+    "deployProd": "npm run environmentProd && firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "10"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "connect-history-api-fallback": "^1.6.0",
+    "cors": "^2.8.5",
+    "exceljs": "^4.2.0",
+    "express": "^4.17.1",
+    "firebase-admin": "^9.2.0",
+    "firebase-functions": "^3.13.1",
+    "morgan": "^1.10.0",
+    "mysql": "^2.18.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^0.2.0",
+    "nodemon": "^2.0.6"
+  },
+  "private": true
+}
