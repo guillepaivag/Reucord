@@ -65,5 +65,11 @@ node_modules/
 # dotenv environment variables file
 .env
 
-#
+# Credentials
 functions/serviceAccountKey.json
+
+# KeysDB_Production
+functions/src/database/keysDB.js
+
+# Data of firebase
+vueReucord/src/config/firebase.js
