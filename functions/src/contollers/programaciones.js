@@ -5,7 +5,7 @@ const pool = require('../database/index')
 const path = require('path')
 const Excel = require('exceljs')
 
-const URL_ORIGEN = config.environment ? 'http://localhost:8080' : 'https://reucord.web.app'
+const URL_ORIGEN = config.environment === 'production' ? 'https://reucord.web.app' : 'http://localhost:8080'
 const URL_BASE_PD = '/pd/verPd-aTratar'
 const URL_BASE_PS = '/ps/verPs-aTratar'
 
