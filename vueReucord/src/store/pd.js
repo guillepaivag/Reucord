@@ -17,6 +17,7 @@ export default {
             PDFECHA: '',
             HORATRAS: '',
             ESTADO: '',
+            SUSMOD: '',
             TRABAJO: '',
             RESPONSABLE: '',
             OBSERVACION: '',

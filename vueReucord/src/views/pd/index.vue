@@ -215,6 +215,9 @@
                             ESTADO: {{getPd.ESTADO}}
                         </li>
                         <li>
+                            SUSPENDIDO/MODIFICADO: {{getPd.SUSMOD}}
+                        </li>
+                        <li>
                             TRABAJO: {{getPd.TRABAJO}}
                         </li>
                         <li>

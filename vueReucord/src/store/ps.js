@@ -18,6 +18,7 @@ export default {
             TRABAJO: null,
             AUT: null,
             ESTADO: null,
+            SUSMOD: null,
             OBSERVAC: null,
             RESULTADO: null,
             RESPONSABLE: null,

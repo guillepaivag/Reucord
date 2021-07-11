@@ -99,7 +99,7 @@
                     <hr>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="" class="mt-3">Aut:</label>
                             <input 
                                 type="text" 
@@ -110,7 +110,7 @@
                             >
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="" class="mt-3">Estado:</label>
                             <input 
                                 type="text" 
@@ -118,6 +118,17 @@
                                 :disabled="system.updated || system.operation === 'read'" 
                                 v-model="ps.ESTADO" 
                                 placeholder="Estado"
+                            >
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="" class="mt-3">Suspendido/Modificado:</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                :disabled="system.updated || system.operation === 'read'" 
+                                v-model="ps.SUSMOD" 
+                                placeholder="Suspendido/Modificado"
                             >
                         </div>
                     </div>
@@ -359,6 +370,7 @@ export default {
                 TRABAJO: null,
                 AUT: null,
                 ESTADO: null,
+                SUSMOD: null,
                 OBSERVAC: null,
                 RESULTADO: null,
                 RESPONSABLE: null,
@@ -601,6 +613,7 @@ export default {
                                     TRABAJO: null,
                                     AUT: null,
                                     ESTADO: null,
+                                    SUSMOD: null,
                                     OBSERVAC: null,
                                     RESULTADO: null,
                                     RESPONSABLE: null,
@@ -664,6 +677,7 @@ export default {
             ps.TRABAJO = ps.TRABAJO ? this.trim(ps.TRABAJO) : null
             ps.AUT = ps.AUT ? this.trim(ps.AUT) : null
             ps.ESTADO = ps.ESTADO ? this.trim(ps.ESTADO) : null
+            ps.SUSMOD = ps.SUSMOD ? this.trim(ps.SUSMOD) : null
             ps.OBSERVAC = ps.OBSERVAC ? this.trim(ps.OBSERVAC) : null
             ps.RESULTADO = ps.RESULTADO ? this.trim(ps.RESULTADO) : null
             ps.RESPONSABLE = ps.RESPONSABLE ? this.trim(ps.RESPONSABLE) : null

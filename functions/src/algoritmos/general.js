@@ -147,6 +147,7 @@ function dataConversionPd(pddatosDatos, pdDatos){
     pddatos.PDFECHA = pddatos.PDFECHA ? new Date(trim(pddatos.PDFECHA).replace('-', '/').replace('-', '/')) : null
     pddatos.HORATRAS = pddatos.HORATRAS ? trim(pddatos.HORATRAS) : null
     pddatos.ESTADO = pddatos.ESTADO ? trim(pddatos.ESTADO) : null
+    pddatos.SUSMOD = pddatos.SUSMOD ? trim(pddatos.SUSMOD) : null
     pddatos.TRABAJO = pddatos.TRABAJO ? trim(pddatos.TRABAJO) : null
     pddatos.RESPONSABLE = pddatos.RESPONSABLE ? trim(pddatos.RESPONSABLE) : null
     pddatos.OBSERVACION = pddatos.OBSERVACION ? trim(pddatos.OBSERVACION) : null
@@ -185,6 +186,7 @@ function dataConversionPs(psdatos, psdatosTrabajos){
     ps.TRABAJO = ps.TRABAJO ? trim(ps.TRABAJO) : null
     ps.AUT = ps.AUT ? trim(ps.AUT) : null
     ps.ESTADO = ps.ESTADO ? trim(ps.ESTADO) : null
+    ps.SUSMOD = ps.SUSMOD ? trim(ps.SUSMOD) : null
     ps.OBSERVAC = ps.OBSERVAC ? trim(ps.OBSERVAC) : null
     ps.RESULTADO = ps.RESULTADO ? trim(ps.RESULTADO) : null
     ps.RESPONSABLE = ps.RESPONSABLE ? trim(ps.RESPONSABLE) : null
