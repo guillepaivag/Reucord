@@ -220,7 +220,9 @@
                         <li>
                             Estado: {{getPs.ESTADO}}
                         </li>
-                        
+                        <li>
+                            Suspendido/Modificado: {{getPs.SUSMOD}}
+                        </li>
                         <li>
                             Observación: {{getPs.OBSERVAC}}
                         </li>

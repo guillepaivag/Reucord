@@ -63,10 +63,13 @@
                             <input type="text" class="form-control" :disabled="system.updated || system.operation === 'read'" v-model="pd.ESTADO" placeholder="Estado">
                         </div>
                         <div class="col-md-6">
-                            <label for="" class="mt-3">Trabajo:</label>
-                            <input type="text" class="form-control" :disabled="system.updated || system.operation === 'read'" v-model="pd.TRABAJO" placeholder="Trabajo">
+                            <label for="" class="mt-3">Suspendido/Modificado:</label>
+                            <input type="text" class="form-control" :disabled="system.updated || system.operation === 'read'" v-model="pd.SUSMOD" placeholder="Suspendido/Modificado">
                         </div>
                     </div>
+
+                    <label for="" class="mt-3">Trabajo:</label>
+                    <input type="text" class="form-control" :disabled="system.updated || system.operation === 'read'" v-model="pd.TRABAJO" placeholder="Trabajo">
 
                     <div class="row">
                         <div class="col-md-6">
@@ -247,6 +250,7 @@ export default {
                 PDFECHA: null,
                 HORATRAS: '0:00:00',
                 ESTADO: null,
+                SUSMOD: null,
                 TRABAJO: null,
                 RESPONSABLE: null,
                 OBSERVACION: null,
@@ -512,6 +516,7 @@ export default {
                                     PDFECHA: null,
                                     HORATRAS: '0:00:00',
                                     ESTADO: null,
+                                    SUSMOD: null,
                                     TRABAJO: null,
                                     RESPONSABLE: null,
                                     OBSERVACION: null,
@@ -576,6 +581,7 @@ export default {
             pddatos.PDFECHA = pddatos.PDFECHA ? this.trim(pddatos.PDFECHA) : null
             pddatos.HORATRAS = pddatos.HORATRAS ? this.trim(pddatos.HORATRAS) : null
             pddatos.ESTADO = pddatos.ESTADO ? this.trim(pddatos.ESTADO) : null
+            pddatos.SUSMOD = pddatos.SUSMOD ? this.trim(pddatos.SUSMOD) : null
             pddatos.TRABAJO = pddatos.TRABAJO ? this.trim(pddatos.TRABAJO) : null
             pddatos.RESPONSABLE = pddatos.RESPONSABLE ? this.trim(pddatos.RESPONSABLE) : null
             pddatos.OBSERVACION = pddatos.OBSERVACION ? this.trim(pddatos.OBSERVACION) : null
