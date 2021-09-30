@@ -1,28 +1,33 @@
-controller = {}
-const pool = require('../database/index')
+const controller = {}
+const EstacionesSubestaciones = require('../models/EstacionesSubestaciones')
+const Respuesta = require('../models/Respuesta')
 
 controller.listaLocales = async (req, res) => {
     
+    let respuesta = null
+
     try {
-        let list = []
-    
-        const response = await pool.query('SELECT * FROM esse')
+        let list = await EstacionesSubestaciones.listaLocales()
 
-        for(let i = 0; i < response.length; i++){
-            list.push(response[i].LOCAL)
-        }
-
-        res.json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Lista de locales enviado con exito.',
-            respuesta: await list
+            resultado: list
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.status(500).json({
-            codigo: 'Error0001',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 
 }
@@ -30,23 +35,30 @@ controller.listaLocales = async (req, res) => {
 controller.getLocalDataByLocal = async (req, res) => {
     
     const { local } = req.params
+    let respuesta = null
 
     try {
-        let list = []
-    
-        const response = await pool.query('SELECT * FROM esse WHERE LOCAL = ?', [local])
+        const response = await EstacionesSubestaciones.datosLocal( local )
 
-        res.status(200).json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Datos del local enviado con exito.',
-            respuesta: response
+            resultado: response
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.status(500).json({
+        respuesta = new Respuesta({
+            status: 500,
             codigo: 'Error',
-            mensaje: 'Hubo un problema en el servidor',
-            respuesta: error
+            mensaje: 'Hubo un problema',
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 
 }

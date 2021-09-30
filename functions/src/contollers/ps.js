@@ -1,71 +1,102 @@
-controllerPs = {}
+const controllerPs = {}
 const pool = require('../database/index')
 const path = require('path')
 const Excel = require('exceljs')
-const {quickSort, verificacionDeCaracteres, dataConversionPs} = require('../algoritmos/general')
+const { verificacionDeCaracteres, dataConversionPs } = require('../helpers/general')
+const ProgramacionSemanal = require('../models/ProgramacionSemanal')
+const PsTrabajo = require('../models/PsTrabajo')
+const Respuesta = require('../models/Respuesta')
 
 controllerPs.list = async (req, res) => {
+    
+    let respuesta = null
+
     try {
-        const rows = await pool.query('SELECT * FROM prgtraviop1 ORDER BY REUFECHA DESC')
-        
-        return res.status(200).json({
+        const rows = await ProgramacionSemanal.listaProgramacionSemanal()
+
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Lista de programación semanal enviada con exito',
-            respuesta: await rows
+            resultado: rows
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+        
     } catch (error) {
         console.log('error', error)
 
-        return res.status(500).json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerPs.onePs = async (req, res) => {
     let { reufecha, reunro, item } = req.params
+    let respuesta = null
 
     try {
-        const row = await pool.query('SELECT * FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
+        const row = await ProgramacionSemanal.unaProgramacionSemanal( reufecha, reunro, item )
 
-        res.status(200).json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Programación semanal enviada con exito',
-            respuesta: row
+            resultado: row
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.status(500).json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
 controllerPs.onePsTrabajos = async (req, res) => {
     let { reufecha, reunro, item } = req.params
+    let respuesta = null
 
     try {
-        const row = await pool.query('SELECT * FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
+        const row = await PsTrabajo.unaPsTrabajo( reufecha, reunro, item )
 
-        res.status(200).json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Programación semanal enviada con exito',
-            respuesta: row
+            resultado: row
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.status(500).json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
 controllerPs.addPs = async (req, res) => {
     const {ps, psTrabajos} = req.body
+    let respuesta = null
 
     try {
         let psRes = JSON.parse(JSON.stringify(ps))
@@ -74,9 +105,6 @@ controllerPs.addPs = async (req, res) => {
         let conversion = dataConversionPs(psRes, psTrabajosRes)
         psRes = conversion.ps
         psTrabajosRes = conversion.psTrabajos
-
-        console.log('psRes', psRes)
-        console.log('psTrabajosRes', psTrabajosRes)
         
         // VERIFICACION DE QUE EXISTA ESTOS DATOS IMPORTANTES QUE
         // IDENTIFICAN A UNA PROGRAMACION SEMANAL
@@ -92,61 +120,73 @@ controllerPs.addPs = async (req, res) => {
                 && verificacionDeCaracteres(psRes.NRO_REC))
             {
                 // VERIFICAMOS SI LOS DATOS A AGREGAR ESTAN DISPONIBLES
-                const row = await pool.query('SELECT * FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [psRes.REUFECHA, psRes.REUNRO, psRes.ITEM])
+                const row = await ProgramacionSemanal.unaProgramacionSemanal( psRes.REUFECHA, psRes.REUNRO, psRes.ITEM )
 
                 // SI ESTA DISPOBIBLE LOS DATOS A AGREGAR
-                if(!row.length){
-                    const result = await pool.query('INSERT INTO prgtraviop1 SET ?', [psRes])
-                    let resultTra = []
-                    for (let i = 0; i < psTrabajosRes.length; i++) {
-                        resultTra.push(await pool.query('INSERT INTO prgtraviop1datos SET ?', [ psTrabajosRes[i] ]))
-                    }
-                    
-                    res.status(200).json({
+                if ( !row.length ) {
+
+                    const response = await ProgramacionSemanal.agregarProgramacionSemanal( psRes, psTrabajosRes )
+
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
                         mensaje: 'Se ha registrado una Programación semanal',
-                        respuesta: {
-                            result,
-                            resultTra
-                        }
+                        resultado: response
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
 
                 // SINO ESTA DISPOBIBLE LOS DATOS A AGREGAR
                 }else {
-                    res.json({
+                    respuesta = new Respuesta({
+                        status: 400,
                         codigo: 'Error',
                         mensaje: 'Ya existe esta Programación semanal'
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                 }
 
             } else {
                 // SI NO EXISTE ALGUNO DE LOS DATOS IMPORTANTES QUE
                 // IDENTIFICA A UNA PROGRAMACION SEMANAL
                 // NO SE AGREGA NADA
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No puede agregar datos con / \\.\nFavor usar -'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
 
         } else {
             // NO SE MODIFICA LOS DATOS SI ES QUE TIENE CARACTERES ESPECIALES COMO
             // / \
-            res.json({
+            respuesta = new Respuesta({
+                status: 400,
                 codigo: 'Error',
                 mensaje: 'Debe ingresar los datos de REUFECHA, REUNRO, ITEM y FECHATRABA'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
         }    
     
     // HUBO UN PROBLEMA
     } catch (error) {
         console.log('error', error)
 
-        res.json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
     
 
@@ -155,6 +195,7 @@ controllerPs.addPs = async (req, res) => {
 controllerPs.update = async (req, res) => {
     let { reufecha, reunro, item } = req.params
     const { ps, psTrabajos } = req.body
+    let respuesta = null
 
     try {
         let psRes = JSON.parse(JSON.stringify(ps))
@@ -179,122 +220,124 @@ controllerPs.update = async (req, res) => {
             {
 
                 // VERIFICAMOS SI LOS DATOS A AGREGAR ESTAN DISPONIBLES
-                const row = await pool.query('SELECT * FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [psRes.REUFECHA, psRes.REUNRO, psRes.ITEM])
+                const row = await ProgramacionSemanal.unaProgramacionSemanal( psRes.REUFECHA, psRes.REUNRO, psRes.ITEM )
                 const exist = row.length > 0
 
                 // SI ESTA DISPOBIBLE LOS DATOS A AGREGAR
-                if(!exist){
+                if ( !exist ) {
 
-                    const updated = await pool.query('UPDATE prgtraviop1 SET ? WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [psRes, reufecha, reunro, item])
+                    const response = await ProgramacionSemanal.actualizarProgramacionSemanal( psRes, psTrabajosRes, reufecha, reunro, item )
 
-                    let updatedPs = []
-
-                    await pool.query('DELETE FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
-
-                    for (let i = 0; i < psTrabajosRes.length; i++) {
-                        updatedPs.push(await pool.query('INSERT INTO prgtraviop1datos SET ?', [psTrabajosRes[i]]))
-                    }
-
-                    return res.json({
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
                         mensaje: 'Se ha guardado los cambios de la Programación semanal',
-                        respuesta: {
-                            updated,
-                            updatedPs
-                        }
+                        resultado: response
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
                 
                 } else {
             
                     // SI LOS DATOS NO DISPONIBLES SON DE LOS DATOS QUE QUEREMOS
                     // MODIFICAR, SE PROCEDE A LA MODIFICACION
-                    console.log('reufecha == psRes.REUFECHA', reufecha == psRes.REUFECHA)
-                    console.log('reunro == psRes.REUNRO', reunro == psRes.REUNRO)
-                    console.log('item == psRes.ITEM', item == psRes.ITEM)
-                    console.log('item, psRes.ITEM', item, psRes.ITEM)
-                    
-                    if(reufecha == psRes.REUFECHA && reunro == psRes.REUNRO && item == psRes.ITEM) {
+
+                    if( reufecha == psRes.REUFECHA && reunro == psRes.REUNRO && item == psRes.ITEM ) {
                         
-                        const updated = await pool.query('UPDATE prgtraviop1 SET ? WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [psRes, reufecha, reunro, item])
+                        const response = await ProgramacionSemanal.actualizarProgramacionSemanal( psRes, psTrabajosRes, reufecha, reunro, item )
 
-                        let updatedPs = []
-
-                        await pool.query('DELETE FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
-
-                        for (let i = 0; i < psTrabajosRes.length; i++) {
-                            updatedPs.push(await pool.query('INSERT INTO prgtraviop1datos SET ?', [psTrabajosRes[i]]))
-                        }
-
-                        return res.json({
+                        respuesta = new Respuesta({
+                            status: 200,
                             codigo: 'Exito',
-                            mensaje: 'Se ha actualizado una Programación semanal.',
-                            respuesta: {
-                                updated,
-                                updatedPs
-                            }
+                            mensaje: 'Se ha guardado los cambios de la Programación semanal',
+                            resultado: response
                         })
+
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
 
                     // SI LOS DATOS NO DISPONIBLES NO SON DE LOS DATOS QUE QUEREMOS
                     // MODIFICAR (EN ESTE CASO SI SON DE OTROS DATOS NO RELACIONADOS)
                     // NO SE PROCEDE A LA MODIFICACION PORQUE YA EXISTE OTRO 
                     } else {
-                        return res.json({
+                        respuesta = new Respuesta({
+                            status: 400,
                             codigo: 'Error',
                             mensaje: 'Ya existe esta Programación semanal.'
                         })
+
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                     }
                 }
 
             } else {
                 // NO SE MODIFICA LOS DATOS SI ES QUE TIENE CARACTERES ESPECIALES COMO
                 // / \ 
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No puede agregar datos con / \\.\nFavor usar -'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
 
         } else {
             // SI NO EXISTE ALGUNO DE LOS DATOS IMPORTANTES QUE
             // IDENTIFICA A UNA PROGRAMACION SEMANAL
             // NO SE MODIFICA NADA
-            res.json({
+            respuesta = new Respuesta({
+                status: 400,
                 codigo: 'Error',
                 mensaje: 'Debe ingresar los datos de REUFECHA, REUNRO, ITEM y FECHATRABA'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
         }
 
     // HUBO UN PROBLEMA 
     } catch (error) {
-        res.json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
 controllerPs.delete = async (req, res) => {
     let { reufecha, reunro, item } = req.params
+    let respuesta = null
 
     try {
-        const deleted = await pool.query('DELETE FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
-        const deletedWorks = await pool.query('DELETE FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? AND ITEM = ?', [reufecha, reunro, item])
-        
-        res.json({
+        const deleted = await ProgramacionSemanal.eliminarProgramacionSemanal( reufecha, reunro, item )
+        const deletedWorks = await PsTrabajo.eliminarPsTrabajo( reufecha, reunro, item )
+
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Se ha eliminado una Programación semanal',
-            respuesta: {
+            resultado: {
                 deleted,
                 deletedWorks
             }
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
@@ -303,6 +346,7 @@ controllerPs.informeXLSX_PS = async (req, res) => {
     const { reufecha, reunro } = req.params
     let pag = 1
     const dir = path.join(__dirname, '..', 'storage', 'ANDE_Informe_ProgramacionSemanal.xlsx')
+    let respuesta = null
 
     // Seleccion de el archivo a copiar
     var workbookModelo = new Excel.Workbook()
@@ -314,11 +358,34 @@ controllerPs.informeXLSX_PS = async (req, res) => {
     let worksheets = []
 
     // proceso de obtener todos los datos a agregar en el informe (datos de informacion y datos de trabajo)
-    const rowDatos = await pool.query('SELECT * FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ( AMPLIACION != ? OR AMPLIACION = ? OR AMPLIACION IS NULL ) ORDER BY `prgtraviop1`.`ITEM` ASC', [reufecha, reunro, 'A', ''])
-    const rowTrabajosDatos = await pool.query('SELECT * FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? ORDER BY `prgtraviop1datos`.`ITEM` ASC', [reufecha, reunro])
-    
-    if (typeof rowTrabajosDatos[0] == 'undefined') {
-        console.log('rowTrabajosDatos', rowTrabajosDatos)
+    const rowDatos = await pool.query(`SELECT * FROM prgtraviop1 
+                                    WHERE REUFECHA = ? AND REUNRO = ? 
+                                    AND ( AMPLIACION != ? OR AMPLIACION = ? OR AMPLIACION IS NULL ) 
+                                    AND ( SUSMOD IS NULL OR SUSMOD != 'S' )
+                                    ORDER BY prgtraviop1.ITEM ASC`, [reufecha, reunro, 'A', ''])
+                                    
+    const rowTrabajosDatos = await pool.query(`SELECT A.* FROM prgtraviop1datos A
+                                            INNER JOIN prgtraviop1 B
+                                            ON A.REUFECHA = B.REUFECHA AND A.REUNRO = B.REUNRO AND A.ITEM = B.ITEM
+                                            WHERE B.REUFECHA = ? AND B.REUNRO = ? 
+                                            AND ( B.AMPLIACION != ? OR B.AMPLIACION = ? OR B.AMPLIACION IS NULL ) 
+                                            AND ( B.SUSMOD IS NULL OR B.SUSMOD != 'S' )
+                                            ORDER BY A.ITEM ASC`, [reufecha, reunro, 'A', ''])
+
+    if ( !rowDatos.length ) {
+        return res.status(400).send({
+            codigo: 'ErrorUsuario',
+            mensaje: `No hay ninguna programación semanal de año ${reufecha} y reunión ${reunro} (no ampliado y no suspendido).`,
+            resultado: 0
+        }) 
+    }
+
+    if ( !rowTrabajosDatos.length ) {
+        return res.status(400).send({
+            codigo: 'ErrorUsuario',
+            mensaje: `No hay ningún trabajo de programación semanal de año ${reufecha} y reunión ${reunro} (no ampliado y no suspendido).`,
+            resultado: 0
+        })  
     }
 
     let fechaDesde = rowTrabajosDatos[0].FECHATRABA
@@ -404,8 +471,19 @@ controllerPs.informeXLSX_PS = async (req, res) => {
         const REUNRO_AMPLIACION = REUNRO_NO_AMPLIACION - 1
 
         // proceso de obtener todos los items en orden sin repetir
-        const rowDatos_Ampliacion = await pool.query('SELECT * FROM prgtraviop1 WHERE REUFECHA = ? AND REUNRO = ? AND ( AMPLIACION != ? OR AMPLIACION = ? OR AMPLIACION IS NULL ) ORDER BY `prgtraviop1`.`ITEM` ASC', [reufecha, REUNRO_AMPLIACION, 'A', ''])
-        const rowTrabajosDatos_Ampliacion = await pool.query('SELECT * FROM prgtraviop1datos WHERE REUFECHA = ? AND REUNRO = ? ORDER BY `prgtraviop1datos`.`ITEM` ASC', [reufecha, REUNRO_AMPLIACION])
+        const rowDatos_Ampliacion = await pool.query(`SELECT * FROM prgtraviop1 
+                                                    WHERE REUFECHA = ? AND REUNRO = ? 
+                                                    AND AMPLIACION = 'A'
+                                                    AND ( SUSMOD IS NULL OR SUSMOD != 'S' )
+                                                    ORDER BY prgtraviop1.ITEM ASC`, [reufecha, REUNRO_AMPLIACION])
+
+        const rowTrabajosDatos_Ampliacion = await pool.query(`SELECT A.* FROM prgtraviop1datos A
+                                                            INNER JOIN prgtraviop1 B
+                                                            ON A.REUFECHA = B.REUFECHA AND A.REUNRO = B.REUNRO AND A.ITEM = B.ITEM
+                                                            WHERE B.REUFECHA = ? AND B.REUNRO = ? 
+                                                            AND B.AMPLIACION = 'A'
+                                                            AND ( B.SUSMOD IS NULL OR B.SUSMOD != 'S' )
+                                                            ORDER BY A.ITEM ASC`, [reufecha, REUNRO_AMPLIACION])
 
         if(rowTrabajosDatos_Ampliacion.length > 0){
 

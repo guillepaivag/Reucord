@@ -1,7 +1,11 @@
 <template>
     <div class="container">
 
-        <div class="row searchingLocal">
+        <div v-if="system.loading">
+            <loading></loading>
+        </div>
+
+        <div class="row searchingLocal" v-else>
             <div class="col-md-6">
                 <label for="" class="mt-3">Local:</label>
                 <b-form-input 
@@ -37,8 +41,13 @@
 </template>
 
 <script>
+import loading from '@/components/Loading'
+
 export default {
     name: '',
+    components: {
+        loading,
+    },
     data() {
         return {
             system: {
@@ -58,8 +67,6 @@ export default {
         goToLocalProgramming(newLocalSelected) {
             if (newLocalSelected != this.localSelected) {
                 this.localSelected = newLocalSelected
-
-                console.log('diferente')
 
                 this.$router.push({ 
                     name: 'Prog.Local', 
@@ -122,22 +129,26 @@ export default {
         }
     },
     async mounted() {
-        // lista locales
-        const localesDB = await this.axios.post('/locales')
-
-        if(!localesDB.data.codigo.includes('Error')){
-            this.list.local = await localesDB.data.respuesta
+        try {
+            // lista locales
+            this.list.local = await this.$store.dispatch('listaLocales') ?? []
 
             // pushs los n primeros
             for(let i = 0; i < this.list.amountToShow; i++){
                 this.list.localAmountToShow.push(this.list.local[i])
             }
-
-        }else {
-            this.system.error = true
-            console.log(localesDB.data.respuesta)
+        } catch (error) {
+            console.log(error)
+        } finally {
+            this.system.loading = false
         }
 
+    },
+    watch: {
+        '$route.params.local': function (nuevo, viejo) {
+            this.localSearch = nuevo
+            this.localSelected = nuevo
+        }
     },
     created() {
         this.localSearch = this.$route.params.local ? this.$route.params.local : ''

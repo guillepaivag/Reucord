@@ -3,9 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
+        
         <div class="row mt-4" v-else>
             <div class="col-md-9 mb-4">
                 <div>
@@ -100,13 +98,11 @@ export default {
     name: '',
     components: {
         loading,
-        error
     },
     data() {
         return {
             system: {
                 loading: true,
-                error: false,
                 updated: false
             },
             params: {
@@ -144,7 +140,7 @@ export default {
         async filtroLocal(){
             this.list.localesSubConjunto = []
 
-            if(this.eq23kv.LOCAL != ''){
+            if( this.eq23kv.LOCAL ){
                 let cont = 0
                 for(let i = 0; i < this.list.locales.length; i++){
                     if(cont < this.list.cantidadMostrar){
@@ -156,10 +152,11 @@ export default {
                 }
 
                 // lista circuito
-                const circuitoDB = await this.axios.post(`/eq23kvCircuitoPorLocal/${this.eq23kv.LOCAL}`)
-                this.list.circuito = await circuitoDB.data
+                this.list.circuito = await this.$store.dispatch('listaCircuitoPorLocal', {
+                    local: this.eq23kv.LOCAL
+                }) ?? []
                 
-                if(this.list.circuito.length != 0){
+                if( this.list.circuito.length ){
                     // pushs los n primeros
                     this.list.circuitoSubConjunto = []
                     for(let i = 0; i < this.list.cantidadMostrar; i++){
@@ -186,7 +183,7 @@ export default {
         async filtroCircuito(){
             this.list.circuitoSubConjunto = []
 
-            if(this.eq23kv.CIRCUITO != ''){
+            if( this.eq23kv.CIRCUITO ){
                 let cont = 0
                 for(let i = 0; i < this.list.circuito.length; i++){
                     if(cont < this.list.cantidadMostrar){
@@ -198,10 +195,12 @@ export default {
                 }
 
                 // lista equipo
-                const equipoDB = await this.axios.post(`/eq23kvEquipoPorLocalCircuito/${this.eq23kv.LOCAL}/${this.eq23kv.CIRCUITO}`)
-                this.list.equipo = await equipoDB.data
+                this.list.equipo = await this.$store.dispatch('listaEquipoPorLocalCircuito', {
+                    local: this.eq23kv.LOCAL,
+                    circuito: this.eq23kv.CIRCUITO
+                }) ?? []
 
-                if(this.list.equipo.length != 0){
+                if( this.list.equipo.length ){
                     // pushs los n primeros
                     this.list.equipoSubConjunto = []
                     for(let i = 0; i < this.list.cantidadMostrar; i++){
@@ -216,7 +215,7 @@ export default {
                 this.eq23kv.EQUIPO = ''
                 this.list.equipoSubConjunto = []
 
-                if(this.eq23kv.LOCAL != ''){
+                if( this.eq23kv.LOCAL ){
                     for(let i = 0; i < this.list.cantidadMostrar; i++){
                         this.list.circuitoSubConjunto.push(this.list.circuito[i])
                     }
@@ -226,7 +225,7 @@ export default {
         filtroEquipo(){
             this.list.equipoSubConjunto = []
 
-            if(this.eq23kv.EQUIPO != ''){
+            if( this.eq23kv.EQUIPO ){
                 let cont = 0
                 for(let i = 0; i < this.list.equipo.length; i++){
                     if(cont < this.list.cantidadMostrar){
@@ -237,7 +236,7 @@ export default {
                     }
                 }
             }else{
-                if(this.eq23kv.LOCAL != '' && this.eq23kv.CIRCUITO != ''){
+                if( this.eq23kv.LOCAL && this.eq23kv.CIRCUITO ){
                     for(let i = 0; i < this.list.cantidadMostrar; i++){
                         this.list.equipoSubConjunto.push(this.list.equipo[i])
                     }
@@ -259,36 +258,25 @@ export default {
                     && this.verificacionDeCaracteres(this.eq23kv.EQUIPO)
                     && this.verificacionDeCaracteres(this.eq23kv.BARRA))
                 {
-                    try {
-                        this.eq23kvDatosTrim()
+                    this.eq23kvDatosTrim()
 
-                        const res = await this.axios.put(`/eq23kvEdit/${this.params.LOCAL}/${this.params.CIRCUITO}/${this.params.EQUIPO}`, this.eq23kv)
+                    const res = await this.$store.dispatch('actualizarEquipo', {
+                        params: this.params,
+                        eq23kv: this.eq23kv
+                    })
+                
+                    this.alternarAlertaVisible(true)
+                    this.mensaje.tipo = 1
+                    this.mensaje.color = 'alert-success'
+                    this.mensaje.titulo = 'Equipo modificado'
+                    this.mensaje.msg = res.mensaje
                     
-                        if(!res.data.codigo.includes('Error')) {
-                            const jsonDataNew = JSON.parse(res.config.data)
-                            this.alternarAlertaVisible(true)
-                            this.mensaje.tipo = 1
-                            this.mensaje.color = 'alert-success'
-                            this.mensaje.titulo = 'Equipo modificado'
-                            this.mensaje.msg = res.data.mensaje
-                            
-                            this.mensaje.lista.push(jsonDataNew.LOCAL)
-                            this.mensaje.lista.push(jsonDataNew.CIRCUITO)
-                            this.mensaje.lista.push(jsonDataNew.EQUIPO)
-                            this.mensaje.lista.push(jsonDataNew.BARRA)
+                    this.mensaje.lista.push(this.eq23kv.LOCAL)
+                    this.mensaje.lista.push(this.eq23kv.CIRCUITO)
+                    this.mensaje.lista.push(this.eq23kv.EQUIPO)
+                    this.mensaje.lista.push(this.eq23kv.BARRA)
 
-                            this.system.updated = true
-                        } else {
-                            this.alternarAlertaVisible(true)
-                            this.mensaje.tipo = 2
-                            this.mensaje.color = 'alert-danger'
-                            this.mensaje.titulo = 'No se ha modificado el equipo'
-                            this.mensaje.msg = res.data.mensaje
-                        }
-                    } catch (error) {
-                        this.system.error = true
-                    
-                    } 
+                    this.system.updated = true
                     
                 } else {
                     this.alternarAlertaVisible(true)
@@ -339,40 +327,24 @@ export default {
     },
     async mounted(){
         try {
-            // console.log('this.params')
-            // console.log(this.params)
+            const eq23kv = await this.$store.dispatch('obtenerEquipo', {
+                local: this.params.LOCAL,
+                circuito: this.params.CIRCUITO,
+                equipo: this.params.EQUIPO
+            })
 
-            // cambiamos el string que contenga '/' por '~' 
-            // console.log('encodeURIComponent')
-            // console.log(encodeURIComponent("/eq23kvOne/"+this.params.LOCAL+"/"+this.params.CIRCUITO+"/"+this.params.EQUIPO+""))
-            // console.log(`/eq23kvOne/${this.params.LOCAL.replace('/', '~')}/${this.params.CIRCUITO.replace('/', '~')}/${this.params.EQUIPO.replace('/', '~')}`)
-            const eq23kv = await this.axios.post(`/eq23kvOne/${this.params.LOCAL}/${this.params.CIRCUITO}/${this.params.EQUIPO}`)
-            
-            if(!eq23kv.data.codigo.includes('Error')){
-                this.eq23kv.LOCAL = await eq23kv.data.respuesta[0].LOCAL
-                this.eq23kv.CIRCUITO = await eq23kv.data.respuesta[0].CIRCUITO
-                this.eq23kv.EQUIPO = await eq23kv.data.respuesta[0].EQUIPO
-                this.eq23kv.BARRA = await eq23kv.data.respuesta[0].BARRA
-            
-                const localesDB = await this.axios.post('/locales')
-                
-                if(!localesDB.data.codigo.includes('Error')){
-                    this.list.locales = await localesDB.data.respuesta
+            this.eq23kv.LOCAL = eq23kv.LOCAL
+            this.eq23kv.CIRCUITO = eq23kv.CIRCUITO
+            this.eq23kv.EQUIPO = eq23kv.EQUIPO
+            this.eq23kv.BARRA = eq23kv.BARRA
 
-                    for(let i = 0; i < this.list.cantidadMostrar; i++){
-                        this.list.localesSubConjunto.push(this.list.locales[i])
-                    }
-                } else {
-                    this.system.error = true
-                    console.log(error)
-                }
-            } else {
-                this.system.error = true
-                console.log(error)
+            this.list.locales = await this.$store.dispatch('listaLocales') ?? []
+
+            for(let i = 0; i < this.list.cantidadMostrar; i++){
+                this.list.localesSubConjunto.push(this.list.locales[i])
             }
 
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally {
             this.system.loading = false

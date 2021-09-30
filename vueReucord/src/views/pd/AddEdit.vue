@@ -3,9 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
+
         <div class="row mt-4" v-else>
             <div :class="system.operation === 'read' ? 'col-md-12' : 'col-md-9'">
                 <div>
@@ -167,7 +165,7 @@
                     <b-form-checkbox
                     id="checkbox-1"
                     v-model="addUltimoNroPD"
-                    @input="ultNroFunc"
+                    @input="alternarNumeroProgramacion"
                     name="checkbox-1"
                     :value="true"
                     :unchecked-value="false"
@@ -213,13 +211,11 @@
 <script>
 import pdAdded from '@/views/pd/Elements/PdAdded'
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 
 export default {
     name: 'AddEditPD',
     components: {
         loading,
-        error,
         pdAdded
     },
     data() {
@@ -233,7 +229,7 @@ export default {
                 operation: '',
                 pdAdded: []
             },
-            ultnro: -1,
+            numeroSiguienteProgramacion: -1,
             addUltimoNroPD: false,
             params: {
                 NROPROG: this.$route.params.nroprog,
@@ -280,14 +276,14 @@ export default {
         }
     },
     methods: {
-        async ultNroFunc(){
+        async alternarNumeroProgramacion(){
             try {
                 if(this.addUltimoNroPD){
                     // guaradar el numero anterior
                     this.system.nroprog = this.pd.NROPROG
                     
                     // cambiar al ultimo numero
-                    this.pd.NROPROG = this.ultnro
+                    this.pd.NROPROG = this.numeroSiguienteProgramacion
                 }else{
                     // cambiamos al numero guardado
                     this.pd.NROPROG = this.system.nroprog
@@ -324,33 +320,22 @@ export default {
                     }
                 }
 
-                try {
-                    // lista circuito
-                    const circuitoDB = await this.axios.post(`/eq23kvCircuitoPorLocal/${this.pd.LOCAL}`)
-                    if(!circuitoDB.data.codigo.includes('Error')){
-                        this.list.circuito = await circuitoDB.data.respuesta
+                // lista circuito
+                this.list.circuito = await this.$store.dispatch('listaCircuitoPorLocal', {
+                    local: this.pd.LOCAL
+                }) ?? []
 
-                        if(this.list.circuito.length != 0){
-                            // pushs los n primeros
-                            this.list.circuitoSubConjunto = []
-                            for(let i = 0; i < this.list.cantidadMostrar; i++){
-                                this.list.circuitoSubConjunto.push(this.list.circuito[i])
-                            }
-                        }else{
-                            this.pd.CIRCUITO = ''
-                            this.pd.EQUIPO = ''
-                            this.list.circuitoSubConjunto = []
-                            this.list.equipoSubConjunto = []
-                        }
-                    } else {
-                        this.alternarAlertaVisible(true)
-                        this.mensaje.color = 'alert-danger'
-                        this.mensaje.titulo = 'Hubo un problema'
-                        this.mensaje.msg = circuitoDB.data.mensaje
+                if(this.list.circuito.length != 0){
+                    // pushs los n primeros
+                    this.list.circuitoSubConjunto = []
+                    for(let i = 0; i < this.list.cantidadMostrar; i++){
+                        this.list.circuitoSubConjunto.push(this.list.circuito[i])
                     }
-                    
-                } catch (error) {
-                    console.log(error)
+                }else{
+                    this.pd.CIRCUITO = ''
+                    this.pd.EQUIPO = ''
+                    this.list.circuitoSubConjunto = []
+                    this.list.equipoSubConjunto = []
                 }
 
             }else{
@@ -378,27 +363,21 @@ export default {
                     }
                 }
 
-                // lista equipo
-                const equipoDB = await this.axios.post(`/eq23kvEquipoPorLocalCircuito/${this.pd.LOCAL}/${this.pd.CIRCUITO}`)
-                
-                if(!equipoDB.data.codigo.includes('Error')){
-                    this.list.equipo = await equipoDB.data.respuesta
+                // lista equipo    
+                this.list.equipo = await this.$store.dispatch('listaEquipoPorLocalCircuito', {
+                    local: this.pd.LOCAL,
+                    circuito: this.pd.CIRCUITO
+                }) ?? []
 
-                    if(this.list.equipo.length != 0){
-                        // pushs los n primeros
-                        this.list.equipoSubConjunto = []
-                        for(let i = 0; i < this.list.cantidadMostrar; i++){
-                            this.list.equipoSubConjunto.push(this.list.equipo[i])
-                        }
-                    }else{
-                        this.pd.EQUIPO = ''
-                        this.list.equipoSubConjunto = []
+                if(this.list.equipo.length != 0){
+                    // pushs los n primeros
+                    this.list.equipoSubConjunto = []
+                    for(let i = 0; i < this.list.cantidadMostrar; i++){
+                        this.list.equipoSubConjunto.push(this.list.equipo[i])
                     }
-                } else {
-                    this.alternarAlertaVisible(true)
-                    this.mensaje.color = 'alert-danger'
-                    this.mensaje.titulo = 'Hubo un problema'
-                    this.mensaje.msg = equipoDB.data.mensaje
+                }else{
+                    this.pd.EQUIPO = ''
+                    this.list.equipoSubConjunto = []
                 }
 
             }else{
@@ -436,24 +415,13 @@ export default {
         async actionPD(){
             console.log(this.system.operation === 'create' ? 'Agregar' : 'Editar')
 
-            console.log('this.pd', this.pd)
-            console.log('this.pdTrabajos', this.pdTrabajos)
-
             let pdAux = JSON.parse(JSON.stringify(this.pd))
             let pdTrabajosAux = JSON.parse(JSON.stringify(this.pdTrabajos))
-            
-            console.log('pdAux', pdAux)
-            console.log('pdTrabajosAux', pdTrabajosAux)
 
             let conversion = this.trimAndConversion(pdAux, pdTrabajosAux)
             
-            console.log('conversion', conversion)
-            
             pdAux = conversion.pddatos
             pdTrabajosAux = conversion.pd
-
-            console.log('pdAux', pdAux)
-            console.log('pdTrabajosAux', pdTrabajosAux)
 
             if(!!pdAux.NROPROG && !!pdAux.PDFECHA){
                 
@@ -468,77 +436,68 @@ export default {
                         this.mensaje.lista = []
                         
                         if( this.system.operation === 'update' ){
-                            const res = await this.axios.put(`/pdUpdate/${this.params.NROPROG}/${this.params.DIA}/${this.params.MES}/${this.params.ANHO}`, {pd: pdAux, pdTrabajos: pdTrabajosAux})
+                            const res = await this.$store.dispatch('actualizarPedidoDisponibilidad', {
+                                params: this.params,
+                                pd: pdAux,
+                                pdTrabajos: pdTrabajosAux
+                            })
 
-                            if(!res.data.codigo.includes('Error')) {
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Nuevo pedido'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.pd.NROPROG)
-                                this.mensaje.lista.push(jsonDataNew.pd.PDFECHA)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Nuevo pedido'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(pdAux.NROPROG)
+                            this.mensaje.lista.push(pdAux.PDFECHA)
 
-                                this.alternarAlertaVisible(true)
+                            this.alternarAlertaVisible(true)
 
-                                this.system.updated = true
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se agrego el pedido'
-                                this.mensaje.msg = res.data.mensaje
-                            }
+                            this.system.updated = true
+
                         }else {
-                            const res = await this.axios.post('/pdAdd', {pd: pdAux, pdTrabajos: pdTrabajosAux})
+                            const res = await this.$store.dispatch('agregarPedidoDisponibilidad', {
+                                pd: pdAux,
+                                pdTrabajos: pdTrabajosAux
+                            })
                         
-                            if(!res.data.codigo.includes('Error')){
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Nuevo pedido'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.pd.NROPROG)
-                                this.mensaje.lista.push(jsonDataNew.pd.PDFECHA)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Nuevo pedido'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(pdAux.NROPROG)
+                            this.mensaje.lista.push(pdAux.PDFECHA)
 
-                                this.alternarAlertaVisible(true)
+                            this.alternarAlertaVisible(true)
 
-                                this.system.pdAdded.push({
-                                    NROPROG: jsonDataNew.pd.NROPROG,
-                                    PDFECHA: jsonDataNew.pd.PDFECHA,
-                                })
+                            this.system.pdAdded.push({
+                                NROPROG: pdAux.NROPROG,
+                                PDFECHA: pdAux.PDFECHA,
+                            })
 
-                                this.pd = {
-                                    LOCAL: null,
-                                    CIRCUITO: null,
-                                    EQUIPO: null,
-                                    NROPROG: null,
-                                    PDTRASMI: null,
-                                    PDFECHA: null,
-                                    HORATRAS: '0:00:00',
-                                    ESTADO: null,
-                                    SUSMOD: null,
-                                    TRABAJO: null,
-                                    RESPONSABLE: null,
-                                    OBSERVACION: null,
-                                    JEFATURA: null,
-                                    NRO_REC: null,
-                                    FECHA_REC: null,
-                                    RECIBIDO: null,
-                                    RESULTADO: null
-                                }
-
-                                this.pdTrabajos = []
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se agrego el pedido'
-                                this.mensaje.msg = res.data.mensaje
+                            this.pd = {
+                                LOCAL: null,
+                                CIRCUITO: null,
+                                EQUIPO: null,
+                                NROPROG: null,
+                                PDTRASMI: null,
+                                PDFECHA: null,
+                                HORATRAS: '0:00:00',
+                                ESTADO: null,
+                                SUSMOD: null,
+                                TRABAJO: null,
+                                RESPONSABLE: null,
+                                OBSERVACION: null,
+                                JEFATURA: null,
+                                NRO_REC: null,
+                                FECHA_REC: null,
+                                RECIBIDO: null,
+                                RESULTADO: null
                             }
+
+                            this.pdTrabajos = []
                         }
 
                     } catch (error) {
                         console.log('error', error)
-                        this.system.error = true
                     }
                 } else {
                     this.alternarAlertaVisible(true)
@@ -569,7 +528,7 @@ export default {
 
             return true
         },
-        trimAndConversion(pddatosDatos, pdDatos){
+        trimAndConversion (pddatosDatos, pdDatos) {
             let pddatos = JSON.parse(JSON.stringify(pddatosDatos))
             let pd = JSON.parse(JSON.stringify(pdDatos))
 
@@ -620,68 +579,58 @@ export default {
                 this.system.operation = 'read'
             }
             
-            let ultnro
             let localesDB
 
             if (this.system.operation != 'read') {
                 // ultimo numero
-                ultnro = await this.axios.post('/general/ultimoNumero')
-                this.ultnro = ultnro.data.ultnro + 1
+                this.numeroSiguienteProgramacion = await this.$store.dispatch('ultimoNumero')
+                this.numeroSiguienteProgramacion++
 
                 // lista locales
-                localesDB = await this.axios.post('/locales')
-                if(!localesDB.data.codigo.includes('Error')){
-                    this.list.locales = await localesDB.data.respuesta
+                this.list.locales = await this.$store.dispatch('listaLocales') ?? []
 
-                    // pushs los n primeros
-                    for(let i = 0; i < this.list.cantidadMostrar; i++){
-                        this.list.localesSubConjunto.push(this.list.locales[i])
-                    }
-
-                }else {
-                    this.system.error = true
-                    console.log(localesDB.data.respuesta)
+                // pushs los n primeros
+                for(let i = 0; i < this.list.cantidadMostrar; i++){
+                    this.list.localesSubConjunto.push(this.list.locales[i])
                 }
             }
 
             if ( this.system.operation === 'update' || this.system.operation === 'read') {
                 // obtenemos los datos a modificar
-                let aux = await this.axios.post('/pdOne/' + this.params.NROPROG + '/' + this.params.DIA + '/' + this.params.MES + '/' + this.params.ANHO)
-                if(!aux.data.codigo.includes('Error')){
-                    this.pd = aux.data.respuesta[0]
+                this.pd = await this.$store.dispatch('getPd', {
+                    nroprog: this.params.NROPROG,
+                    dia: this.params.DIA,
+                    mes: this.params.MES,
+                    anho: this.params.ANHO,
+                })
 
-                    // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
-                    if(this.pd.PDFECHA){
-                        this.pd.PDFECHA = this.pd.PDFECHA.substring(0, 10)
-                    }
-
-                    if(this.pd.FECHA_REC){
-                        this.pd.FECHA_REC = this.pd.FECHA_REC.substring(0, 10)
-                    }
-                } else {
-                    this.system.error = true
-                    console.log(aux.data.respuesta)
+                // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
+                if(this.pd.PDFECHA){
+                    this.pd.PDFECHA = this.pd.PDFECHA.substring(0, 10)
                 }
 
-                aux = await this.axios.post('/pdOneTrabajos/' + this.params.NROPROG + '/' + this.params.DIA + '/' + this.params.MES + '/' + this.params.ANHO)
-                if(!aux.data.codigo.includes('Error')){
-                    this.pdTrabajos = aux.data.respuesta
+                if(this.pd.FECHA_REC){
+                    this.pd.FECHA_REC = this.pd.FECHA_REC.substring(0, 10)
+                }
 
-                    // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
-                    for (let i = 0; i < this.pdTrabajos.length; i++) {
-                        const element = this.pdTrabajos[i];
-                        
-                        if(this.pdTrabajos[i].PDFECHA){
-                            this.pdTrabajos[i].PDFECHA = element.PDFECHA.substring(0, 10)
-                        }
-                        if(this.pdTrabajos[i].FECHATRA){
-                            this.pdTrabajos[i].FECHATRA = element.FECHATRA.substring(0, 10)
-                        }
+                this.pdTrabajos = await this.$store.dispatch('getPdTrabajo', {
+                    nroprog: this.params.NROPROG,
+                    dia: this.params.DIA,
+                    mes: this.params.MES,
+                    anho: this.params.ANHO,
+                })
 
+                // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
+                for (let i = 0; i < this.pdTrabajos.length; i++) {
+                    const element = this.pdTrabajos[i];
+                    
+                    if(this.pdTrabajos[i].PDFECHA){
+                        this.pdTrabajos[i].PDFECHA = element.PDFECHA.substring(0, 10)
                     }
-                } else {
-                    this.system.error = true
-                    console.log(aux.data.respuesta)
+                    if(this.pdTrabajos[i].FECHATRA){
+                        this.pdTrabajos[i].FECHATRA = element.FECHATRA.substring(0, 10)
+                    }
+
                 }
 
                 // guardamos el numero actual de nroprog
@@ -698,7 +647,6 @@ export default {
             }
 
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally {
             this.system.loading = false

@@ -3,11 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
-        
+
         <div v-else>
             <div class="row mb-3 mt-3">
                 <div class="col-md-8">
@@ -168,9 +164,9 @@
                         v-for="(dato, index) in datos" :key="index"
                     >
                         <th scope="row">{{index+getStart()+1}}</th>
-                        <th>{{dato.NROPROG}}</th>
+                        <th>{{ dato.NROPROG }}</th>
                         <td>{{ dato.PDFECHA ? new Date(dato.PDFECHA).toISOString().substring(0,10) : null }}</td>
-                        <td>{{dato.LOCAL}}</td>
+                        <td>{{ dato.LOCAL }}</td>
                         <td>
                             <button type="button" class="btn btn-outline-info btn-block" @click="cargarDatos(datos[index], index)">Cargar datos</button>
                             <button type="button" class="btn btn-outline-primary btn-block" @click="showModalVista(datos[index], index)">Ver datos</button>
@@ -191,61 +187,61 @@
                 <hr>
                     <ul>
                         <li>
-                            LOCAL: {{getPd.LOCAL}}
+                            LOCAL: {{pdDatos.LOCAL}}
                         </li>
                         <li>
-                            CIRCUITO: {{getPd.CIRCUITO}}
+                            CIRCUITO: {{pdDatos.CIRCUITO}}
                         </li>
                         <li>
-                            EQUIPO: {{getPd.EQUIPO}}
+                            EQUIPO: {{pdDatos.EQUIPO}}
                         </li>
                         <li>
-                            NROPROG: {{getPd.NROPROG}}
+                            NROPROG: {{pdDatos.NROPROG}}
                         </li>
                         <li>
-                            PDTRASMI: {{getPd.PDTRASMI}}
+                            PDTRASMI: {{pdDatos.PDTRASMI}}
                         </li>
                         <li>
-                            PDFECHA: {{ getPd.PDFECHA ? new Date(getPd.PDFECHA).toISOString().substring(0,10) : null }}
+                            PDFECHA: {{ pdDatos.PDFECHA ? new Date(pdDatos.PDFECHA).toISOString().substring(0,10) : null }}
                         </li>
                         <li>
-                            HORA TRASMITIDA: {{getPd.HORATRAS}}
+                            HORA TRASMITIDA: {{pdDatos.HORATRAS}}
                         </li>
                         <li>
-                            ESTADO: {{getPd.ESTADO}}
+                            ESTADO: {{pdDatos.ESTADO}}
                         </li>
                         <li>
-                            SUSPENDIDO/MODIFICADO: {{getPd.SUSMOD}}
+                            SUSPENDIDO/MODIFICADO: {{pdDatos.SUSMOD}}
                         </li>
                         <li>
-                            TRABAJO: {{getPd.TRABAJO}}
+                            TRABAJO: {{pdDatos.TRABAJO}}
                         </li>
                         <li>
-                            RESPONSABLE: {{getPd.RESPONSABLE}}
+                            RESPONSABLE: {{pdDatos.RESPONSABLE}}
                         </li>
                         <li>
-                            OBSERVACION: {{getPd.OBSERVACION}}
+                            OBSERVACION: {{pdDatos.OBSERVACION}}
                         </li>
                         <li>
-                            JEFATURA: {{getPd.JEFATURA}}
+                            JEFATURA: {{pdDatos.JEFATURA}}
                         </li>
                         <li>
-                            NRO_REC: {{getPd.NRO_REC}}
+                            NRO_REC: {{pdDatos.NRO_REC}}
                         </li>
                         <li>
-                            FECHA_REC: {{getPd.FECHA_REC}}
+                            FECHA_REC: {{pdDatos.FECHA_REC}}
                         </li>
                         <li>
-                            RECIBIDO POR: {{getPd.RECIBIDO}}
+                            RECIBIDO POR: {{pdDatos.RECIBIDO}}
                         </li>
                         <li>
-                            RESULTADO: {{getPd.RESULTADO}}
+                            RESULTADO: {{pdDatos.RESULTADO}}
                         </li>
                         <hr>
                         <li>
                             Trabajos:
-                            <div class="container" v-if="getPdTrabajos.length > 0">
-                                <ul v-for="(trabajo, index) in getPdTrabajos" :key="index">
+                            <div class="container" v-if="pdDatosTrabajos.length > 0">
+                                <ul v-for="(trabajo, index) in pdDatosTrabajos" :key="index">
                                     <li>
                                         {{ trabajo.FECHATRA ? new Date(trabajo.FECHATRA).toISOString().substring(0,10) : null }}
                                     </li>
@@ -298,7 +294,6 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 import XLSX from 'xlsx'
 import download from 'js-file-download';
  
@@ -310,7 +305,6 @@ export default {
         return {
             system: {
                 loading: true,
-                error: false,
             },
             indexPD: 0,
             nombreExcel: '',
@@ -328,6 +322,8 @@ export default {
                 MES: '',
                 ANHO: ''
             },
+            pdDatos: {},
+            pdDatosTrabajos: {},
             datos: [],
             datosOp: [],
             datosTotal: [],
@@ -337,13 +333,11 @@ export default {
     },
     components: {
         loading,
-        error
     },
     methods: {
-        ...mapMutations(['setPdState', 'setPdTrabajosState']),
         formatDate (date) {
             if (date) {
-                return new Date( `${date.substring(0,10).replace('-', '/').replace('-', '/')} 01:00:00` )
+                return new Date(`${date.substring(0,10)}T13:00:00`)
             }
 
             return null
@@ -351,9 +345,9 @@ export default {
         // get data
         async mostrarTodo(){
             try {
-                const res = await this.axios.post('/pd')
-                this.datosTotal = res.data.respuesta
-                this.datosOp = res.data.respuesta
+                const res = await this.$store.dispatch('getListaPd')
+                this.datosTotal = res
+                this.datosOp = res
             } catch (error) {
                 console.log(error)
             }
@@ -405,13 +399,17 @@ export default {
             this.pd.MES = pdfecha.getMonth()+1
             this.pd.ANHO = pdfecha.getFullYear()
 
-            this.setPdState(dato)
+            this.pdDatos = dato
             
             try {
-                const rows = await this.axios.post(`/pdOneTrabajos/${this.pd.NROPROG}/${this.pd.DIA}/${this.pd.MES}/${this.pd.ANHO}`)
-                // console.log(rows.data)
-                this.setPdTrabajosState(rows.data.respuesta)
-                // console.log(this.pdRefAux)
+                const rows = await this.$store.dispatch('getPdTrabajo', {
+                    nroprog: this.pd.NROPROG,
+                    dia: this.pd.DIA,
+                    mes: this.pd.MES,
+                    anho: this.pd.ANHO,
+                })
+                this.pdDatosTrabajos = rows
+                
             } catch (error) {
                 console.log(error)
             }
@@ -425,14 +423,10 @@ export default {
         // generar informes
         async generarInforme(){
             try {
-                const res = await this.axios.get(`/pdInformeXLSX/${this.pd.NROPROG}/${this.pd.DIA}/${this.pd.MES}/${this.pd.ANHO}`,
-                    {
-                        responseType: 'blob',
-                        headers: {
-                            Accept: 'application/octet-stream'
-                        }
-                    }
-                )
+                console.log('this.pd', this.pd)
+
+                const res = await this.$store.dispatch('genenrarExcel', this.pd)
+                
                 const fileName = res.headers['x-processed-filename']; // <= cabezera personalizada
                 const url = window.URL.createObjectURL(new Blob([res.data]));
                 const link = document.createElement('a');
@@ -449,7 +443,12 @@ export default {
         // funcion de eliminacion
         async eliminarPD(){
             try {
-                await this.axios.delete(`/pdDelete/${this.pd.NROPROG}/${this.pd.DIA}/${this.pd.MES}/${this.pd.ANHO}`)
+                await this.$store.dispatch('eliminarPdAction', {
+                    nroprog: this.pd.NROPROG,
+                    dia: this.pd.DIA,
+                    mes: this.pd.MES,
+                    anho: this.pd.ANHO,
+                })
                 this.hideModalElim()
                 this.mostrarTodo()
                 this.actualizarDatos()
@@ -572,7 +571,7 @@ export default {
         async goToEditPd(nro, fecha){
             const pdfecha = this.formatDate(fecha)
             const dia = pdfecha.getDate()
-            const mes = pdfecha.getMonth()+1
+            const mes = pdfecha.getMonth() + 1
             const anho = pdfecha.getFullYear()
             
             // this.$router.push('/pd/editarPd-aTratar')
@@ -607,17 +606,12 @@ export default {
             }
         }
     },
-    mounted(){
-        this.setPdState()
-        this.setPdTrabajosState()
-    },
     async created() {
         try {
-            const res = await this.axios.post('/pd')
-            this.datosTotal = res.data.respuesta
-            this.datosOp = res.data.respuesta
+            const res = await this.$store.dispatch('getListaPd')
+            this.datosTotal = res
+            this.datosOp = res
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally{
             this.system.loading = false
@@ -627,7 +621,6 @@ export default {
         this.actualizarDatos()
     },
     computed: {
-        ...mapGetters(['getPd', 'getPdTrabajos']),
         totalRow() {
             return this.datosOp.length
         },

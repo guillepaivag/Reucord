@@ -3,9 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
+
         <div v-else>
             <table class="table table-hover table-responsive-xl mt-3">
                 <thead>
@@ -42,13 +40,11 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 
 export default {
     name: '',
     components: {
         loading,
-        error
     },
     data() {
         return {
@@ -68,12 +64,15 @@ export default {
     },
     methods: {
         viewProgrammingData (programming) {
-            if(programming.programmingType === 'PD') {
+            if( programming.programmingType === 'PD' ) {
+                
+                const pdFecha = new Date( `${programming.informationData.PDFECHA.substring(0,10)}T13:00:00.000Z` )
+
                 const NROPROG = programming.informationData.NROPROG
-                const PDFECHA = programming.informationData.PDFECHA.toISOString().substring(0,10)
-                const DAY = programming.informationData.PDFECHA.getDate()
-                const MONTH = programming.informationData.PDFECHA.getMonth()+1
-                const YEAR = programming.informationData.PDFECHA.getFullYear()
+                const PDFECHA = pdFecha.toISOString().substr(0, 10)
+                const DAY = pdFecha.getDate()
+                const MONTH = pdFecha.getMonth()+1
+                const YEAR = pdFecha.getFullYear()
 
                 let routeUrl = this.$router.resolve({ name: 'Pd.viewPd', params: { 
                     nroprog: NROPROG,
@@ -100,62 +99,28 @@ export default {
             this.system.loading = true
             
             try {
-                console.table({
-                    localSelected: local
-                })
-
-                const year = new Date().getFullYear()
-                
-                return await this.axios.post(`/programmingLists/${local}/${year}`)
+                this.programmingLists = await this.$store.dispatch('listaProgramaciones', {
+                    local
+                }) ?? []
 
             } catch (error) {
-                this.system.error = true
+                console.log(error)
 
-                if (error.response) {
-                    // The request was made and the server responded with a status code
-                    // that falls out of the range of 2xx
-                    console.log(error.response.data);
-                    console.log(error.response.status);
-                    console.log(error.response.headers);
-                } else if (error.request) {
-                    // The request was made but no response was received
-                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-                    // http.ClientRequest in node.js
-                    console.log(error.request);
-                } else {
-                    // Something happened in setting up the request that triggered an Error
-                    console.log('Error', error.message);
-                }
-                console.log(error.config);
             } finally{
                 this.system.loading = false
             }
         },
-        async bringNewData () {
-            const programmingLists = await this.getProgrammingsByLocal(this.localSelected)
-
-            console.log('programmingLists', programmingLists)
-
-            this.programmingLists = programmingLists.data.respuesta
-        }
     },
     watch: {
-        localSelectedProp: async function getData(val, oldVal) {
+        localSelectedProp: async function (val, oldVal) {
+            await this.getProgrammingsByLocal(val)
             this.localSelected = val
-            
-            console.log('WATCH this.localSelectedProp', this.localSelectedProp)
-            console.log('WATCH this.localSelected', this.localSelected)
-            console.log({
-                val, oldVal
-            })
-            await this.bringNewData()
         }
     },
     async mounted() {
         this.localSelected = this.$route.params.local
-        console.log('MOUNTED this.localSelected', this.localSelected, this.$route.params.local)
         
-        await this.bringNewData()
+        await this.getProgrammingsByLocal(this.localSelected)
     },
 }
 </script>

@@ -57,26 +57,6 @@
                 Suspensiones
             </router-link >
           </li>
-          <li class="nav-item dropdown active">
-            <a
-              class="nav-link dropdown-toggle"
-              data-toggle="dropdown"
-              role="button"
-              aria-haspopup="true"
-              aria-expanded="false"
-              >
-              Más
-            </a>
-            <div class="dropdown-menu">
-              <router-link class="dropdown-item" to="/tratadas">
-                Programaciones tratadas
-              </router-link>
-              <div class="dropdown-divider"></div>
-              <router-link class="dropdown-item" to="/enlistamientos">Enlistamientos</router-link>
-              <div class="dropdown-divider"></div>
-              <router-link class="dropdown-item" to="/pam">PAM</router-link>
-            </div>
-          </li>
         </ul>
         <div class="m-auto nav-item">
             <a class="btn btn-outline-light" v-on:click="cerrarSesion">CERRAR SESIÓN</a>
@@ -90,11 +70,9 @@
 export default {
     name: 'navegationUser',
     methods: {
-        cerrarSesion(){
-          this.$store.dispatch('firebaseLogout')
-          .then(() => {
-              this.$router.push('/login')
-          })
+        async cerrarSesion(){
+          await this.$store.dispatch('firebaseLogout')
+          this.$router.push('/login')
         }
     },
 };

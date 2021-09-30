@@ -3,9 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
+        
         <div class="row mt-4" v-else>
             <div class="col-md-9">
                 <div>
@@ -119,25 +117,22 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 import {mapMutations, mapActions, mapGetters} from 'vuex'
 
 export default {
     name: 'editPD',
     components: {
         loading,
-        error
     },
     data() {
         return {
             system: {
                 loading: true,
-                error: false,
                 updated: false,
                 isAdd: true,
                 nroprog: null,
             },
-            ultnro: -1,
+            numeroSiguienteProgramacion: -1,
             selectUltimoNro: false,
             nroAct: 0,
             params: {
@@ -152,7 +147,7 @@ export default {
                 NROOTRADE: null,
                 DMEDNRO: null,
                 DMED: null,
-                HORATRASM: null,
+                HORATRASM: '0:00:00',
                 FECHATRASM: null,
                 TRASMPOR: null,
                 RECIBPOR: null,
@@ -180,7 +175,7 @@ export default {
                     this.system.nroprog = this.reclamo.DMEDNRO
                     
                     // cambiar al ultimo numero
-                    this.reclamo.DMEDNRO = this.ultnro
+                    this.reclamo.DMEDNRO = this.numeroSiguienteProgramacion
                 }else{
                     // cambiamos al numero guardado
                     this.reclamo.DMEDNRO = this.system.nroprog
@@ -230,30 +225,28 @@ export default {
                         // Para editar
                         try {
                             
-                            const res = await this.axios.put(`/reclamoUpdate/${this.params.DMEDNRO}/${this.params.DIA}/${this.params.MES}/${this.params.ANHO}`, {reclamo})
-                            console.log(res)
+                            const res = await this.$store.dispatch('actualizarReclamo', {
+                                params: {
+                                    dmednro: this.params.DMEDNRO,
+                                    dia: this.params.DIA,
+                                    mes: this.params.MES,
+                                    anho: this.params.ANHO
+                                },
+                                reclamo
+                            })
 
-                            if(!res.data.codigo.includes('Error')){
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Reclamo modificado'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.reclamo.DMEDNRO)
-                                this.mensaje.lista.push(jsonDataNew.reclamo.FECHATRASM)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Reclamo modificado'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(reclamo.DMEDNRO)
+                            this.mensaje.lista.push(reclamo.FECHATRASM)
 
-                                this.alternarAlertaVisible(true)
-                                this.system.updated = true
-
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se a modificado el reclamo'
-                                this.mensaje.msg = res.data.mensaje
-                            }
+                            this.alternarAlertaVisible(true)
+                            this.system.updated = true
 
                         } catch (error) {
-                            this.system.error = true
+                            console.log(error)
                         
                         } finally {
                             this.system.loading = false
@@ -263,41 +256,33 @@ export default {
                     }else{
                         // Para agregar
                         try {
+                            const res = await this.$store.dispatch('agregarReclamo', {
+                                reclamo
+                            })
 
-                            const res = await this.axios.post('/reclamoAdd', {reclamo})
-                            console.log(res)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Nuevo reclamo'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(reclamo.DMEDNRO)
+                            this.mensaje.lista.push(reclamo.FECHATRASM)
 
-                            if(!res.data.codigo.includes('Error')){
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Nuevo reclamo'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.reclamo.DMEDNRO)
-                                this.mensaje.lista.push(jsonDataNew.reclamo.FECHATRASM)
-
-                                this.alternarAlertaVisible(true)
-                                this.reclamo = {
-                                    LOCAL: null,
-                                    OTRADEP: null,
-                                    NROOTRADE: null,
-                                    DMEDNRO: null,
-                                    DMED: null,
-                                    HORATRASM: null,
-                                    FECHATRASM: null,
-                                    TRASMPOR: null,
-                                    RECIBPOR: null,
-                                    RECLAMO: null
-                                }
-
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se agrego el reclamo'
-                                this.mensaje.msg = res.data.mensaje
+                            this.alternarAlertaVisible(true)
+                            this.reclamo = {
+                                LOCAL: null,
+                                OTRADEP: null,
+                                NROOTRADE: null,
+                                DMEDNRO: null,
+                                DMED: null,
+                                HORATRASM: null,
+                                FECHATRASM: null,
+                                TRASMPOR: null,
+                                RECIBPOR: null,
+                                RECLAMO: null
                             }
+
                         } catch (error) {
-                            this.system.error = true
+                            console.log(error)
                         
                         } finally {
                             this.system.loading = false
@@ -363,46 +348,36 @@ export default {
             this.system.isAdd = !!!this.$route.params.dmednro
 
             // ultimo numero
-            const ultnro = await this.axios.post('/general/ultimoNumero')
-            this.ultnro = ultnro.data.ultnro + 1
+            this.numeroSiguienteProgramacion = await this.$store.dispatch('ultimoNumero')
+            this.numeroSiguienteProgramacion++
 
             // lista locales
-            const localesDB = await this.axios.post('/locales')
-            if(!localesDB.data.codigo.includes('Error')){
-                this.list.locales = await localesDB.data.respuesta
-
-                // pushs los n primeros
-                for(let i = 0; i < this.list.cantidadMostrar; i++){
-                    this.list.localesSubConjunto.push(this.list.locales[i])
-                }
-
-            } else {
-                console.log('localesDB.data', localesDB.data)
-                this.system.error = true
+            this.list.locales = await this.$store.dispatch('listaLocales') ?? []
+            
+            // pushs los n primeros
+            for(let i = 0; i < this.list.cantidadMostrar; i++){
+                this.list.localesSubConjunto.push(this.list.locales[i])
             }
 
             // obtenemos los datos a modificar
             if(!this.system.isAdd){
-                let aux = await this.axios.post(`/reclamoOne/${this.params.DMEDNRO}/${this.params.DIA}/${this.params.MES}/${this.params.ANHO}`)
+                this.reclamo = await this.$store.dispatch('obtenerUnReclamo', {
+                    dmednro: this.params.DMEDNRO,
+                    dia: this.params.DIA,
+                    mes: this.params.MES,
+                    anho: this.params.ANHO,
+                })
                 
-                if(!aux.data.codigo.includes('Error')){
-                    this.reclamo = aux.data.respuesta[0]
+                this.reclamo.FECHATRASM = this.reclamo.FECHATRASM.substring(0, 10)
 
-                    this.reclamo.FECHATRASM = this.reclamo.FECHATRASM.substring(0, 10)
-
-                    // guardamos el numero actual de nroprog
-                    this.system.nroprog = parseInt(this.reclamo.DMEDNRO)
-                } else {
-                    this.system.error = true
-                }
+                // guardamos el numero actual de nroprog
+                this.system.nroprog = parseInt(this.reclamo.DMEDNRO)
             } 
 
         } catch (error) {
-            this.system.error = true
             console.log('error', error)
         } finally {
             this.system.loading = false
-            // console.log('finally')
         }
     },
     updated(){},

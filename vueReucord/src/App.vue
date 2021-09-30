@@ -2,8 +2,11 @@
   <div id="app">
     <navegationUser v-if="getLogeo"/>
     <navegation v-else />
-    <router-view/>
-    <pie/>
+    <div class="body">
+      <router-view/>
+      <pie/>
+    </div>
+    
   </div>
 </template>
 
@@ -12,17 +15,17 @@ import navegation from '@/components/Navegation.vue'
 import navegationUser from '@/components/NavegationUser.vue'
 import pie from '@/components/Pie.vue'
 
-import { mapState, mapGetters } from 'vuex'
+import { mapGetters } from 'vuex'
 
 export default {
   name: 'app',
   components: {
     navegation,
     navegationUser,
-    pie
+    pie,
   },
   computed: {
-    ...mapGetters(['getLogeo'])
+    ...mapGetters(['getLogeo']),
   }
 }
 </script>
@@ -36,5 +39,9 @@ export default {
 
 #nav a.router-link-exact-active {
   color: #42b983;
+}
+
+.body {
+  height: 100vh;
 }
 </style>

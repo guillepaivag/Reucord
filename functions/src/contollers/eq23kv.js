@@ -1,54 +1,80 @@
 const controllerEq23kv = {}
 const pool = require('../database/index')
-const {eq23kvDatosTrim, verificacionDeCaracteres} = require('../algoritmos/general')
+const {eq23kvDatosTrim, verificacionDeCaracteres} = require('../helpers/general')
+const Eq23kv = require('../models/Eq23kv')
+const Respuesta = require('../models/Respuesta')
 
 controllerEq23kv.list = async (req, res) => {
     
-    try {
-        const rows = await pool.query('SELECT * FROM eq23kv')
+    let respuesta = null
 
-        res.status(200).json({
+    try {
+        const rows = await Eq23kv.listaEquipos()
+
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Lista de eq23kv enviado con exito',
-            respuesta: await rows
+            resultado: rows
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerEq23kv.eq23kvOne = async (req, res) => {
     const {local, circuito, equipo} = req.params
 
-    try {
-        if(verificacionDeCaracteres(local)
-            && verificacionDeCaracteres(circuito)
-            && verificacionDeCaracteres(equipo))
-        {
-            const row = await pool.query('SELECT * FROM eq23kv WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [local, circuito, equipo])
+    let respuesta = null
 
-            res.status(200).json({
+    try {
+        if( verificacionDeCaracteres(local)
+            && verificacionDeCaracteres(circuito)
+            && verificacionDeCaracteres(equipo) )
+        {
+            const row = await Eq23kv.unEquipo( local, circuito, equipo )
+
+            respuesta = new Respuesta({
+                status: 200,
                 codigo: 'Exito',
                 mensaje: 'Eq23kv enviado con exito',
-                respuesta: await row
+                resultado: row
             })
+    
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         } else {
-            res.json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'No ingrese datos que contengan / \\'
             })
+    
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
 
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 
 }
@@ -57,10 +83,11 @@ controllerEq23kv.listaCircuitoPorLocal = async (req, res) => {
     const {local} = req.params
 
     let list = []
+    let respuesta = null
     
     try {
         if(verificacionDeCaracteres(local)){
-            const response = await pool.query('SELECT * FROM eq23kv WHERE LOCAL = ?', [local])
+            const response = await Eq23kv.circuitoPorLocal( local )
 
             if(response.length > 0){
                 for(let i = 0; i < response.length; i++){
@@ -68,31 +95,47 @@ controllerEq23kv.listaCircuitoPorLocal = async (req, res) => {
                         list.push(response[i].CIRCUITO)
                     }
                 }
-            
-                res.json({
+
+                respuesta = new Respuesta({
+                    status: 200,
                     codigo: 'Exito',
                     mensaje: 'Lista de circuitos enviado con exito',
-                    respuesta: list
+                    resultado: list
                 })
+        
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }else {
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No existe el local'
                 })
+        
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
         } else {
-            res.json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'No ingrese datos que contengan / \\'
             })
+    
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
         
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 
 }
@@ -101,12 +144,11 @@ controllerEq23kv.listaEquipoPorLocalCircuito = async (req, res) => {
     const {local, circuito} = req.params
 
     let list = []
+    let respuesta = null
     
     try {
-        if(verificacionDeCaracteres(local)
-            && verificacionDeCaracteres(circuito))
-        {
-            const response = await pool.query('SELECT * FROM eq23kv WHERE LOCAL = ? AND CIRCUITO = ?', [local, circuito])
+        if( verificacionDeCaracteres(local) && verificacionDeCaracteres(circuito) ) {
+            const response = await Eq23kv.listaEquipoPorLocalCircuito( local, circuito )
 
             if(response.length > 0){
                 for(let i = 0; i < response.length; i++){
@@ -114,31 +156,47 @@ controllerEq23kv.listaEquipoPorLocalCircuito = async (req, res) => {
                         list.push(response[i].EQUIPO)
                     }
                 }
-            
-                res.json({
+
+                respuesta = new Respuesta({
+                    status: 200,
                     codigo: 'Exito',
                     mensaje: 'Lista de equipos enviado con exito',
-                    respuesta: list
+                    resultado: list
                 })
+        
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+            
             }else {
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No existe el local o el circuito'
                 })
+        
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
         } else {
-            res.json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'No ingrese datos que contengan / \\'
             })
+    
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
 
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
@@ -146,6 +204,7 @@ controllerEq23kv.save = async (req, res) => {
     const data = req.body
 
     let eq23kvRes = JSON.parse(JSON.stringify(data))
+    let respuesta = null
 
     try {
         eq23kvRes = eq23kvDatosTrim(eq23kvRes)
@@ -157,76 +216,123 @@ controllerEq23kv.save = async (req, res) => {
                 && verificacionDeCaracteres(eq23kvRes.CIRCUITO)
                 && verificacionDeCaracteres(eq23kvRes.EQUIPO))
             {
-                const verificacion = await pool.query('SELECT * FROM eq23kv WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [eq23kvRes.LOCAL, eq23kvRes.CIRCUITO, eq23kvRes.EQUIPO])
+                const verificacion = await Eq23kv.unEquipo( eq23kvRes.LOCAL, eq23kvRes.CIRCUITO, eq23kvRes.EQUIPO )
 
-                if(verificacion.length == 0){
-                    const added = await pool.query('INSERT INTO eq23kv SET ?', [eq23kvRes])
-                
-                    res.json({
+                if( !verificacion.length ){
+                    const response = await Eq23kv.agregarEquipo( eq23kvRes )
+
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
                         mensaje: 'Se ha agregado el equipo en eq23kv con exito.',
-                        respuesta: await added
+                        resultado: response
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                 } else {
-                    res.json({
-                        codigo: 'Error002',
+                    respuesta = new Respuesta({
+                        status: 400,
+                        codigo: 'Error',
                         mensaje: 'Ya existe este equipo.'
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                 }
+
             } else {
-                res.json({
-                    codigo: 'Error002',
+                respuesta = new Respuesta({
+                    status: 400,
+                    codigo: 'Error',
                     mensaje: 'No ingrese datos que contengan / \\.'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+                
             }
         } else {
-            res.json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'Ingrese todos los datos para la identificación de un equipo.'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerEq23kv.delete = async (req, res) => {
     const {local, circuito, equipo} = req.params
+    let respuesta = null
 
     try {
         if(verificacionDeCaracteres(local)
             && verificacionDeCaracteres(circuito)
             && verificacionDeCaracteres(equipo))
-        {
-            const deleted = await pool.query('DELETE FROM eq23kv WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [local, circuito, equipo])
+        {   
+            const verificacion = await Eq23kv.unEquipo( local, circuito, equipo )
+
+            if ( !verificacion.length ) {
+                respuesta = new Respuesta({
+                    status: 400,
+                    codigo: 'Error',
+                    mensaje: 'No existe el equipo.',
+                })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+            }
+
+            const deleted = await Eq23kv.eliminarEquipo( local, circuito, equipo )
             
-            res.json({
+            respuesta = new Respuesta({
+                status: 200,
                 codigo: 'Exito',
                 mensaje: 'Un eq23kv se a eliminado con exito.',
-                respuesta: await deleted
+                resultado: deleted
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         } else {
-            res.status(500).json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'No ingrese datos que contengan / \\'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerEq23kv.update = async (req, res) => {
     const {local, circuito, equipo} = req.params
     const datoActualizado = req.body
+    let respuesta = null
 
     let eq23kvRes = JSON.parse(JSON.stringify(datoActualizado))
 
@@ -240,51 +346,75 @@ controllerEq23kv.update = async (req, res) => {
                 && verificacionDeCaracteres(eq23kvRes.CIRCUITO)
                 && verificacionDeCaracteres(eq23kvRes.EQUIPO))
             {
-                const verificacion = await pool.query('SELECT * FROM eq23kv WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [eq23kvRes.LOCAL, eq23kvRes.CIRCUITO, eq23kvRes.EQUIPO])
+                const verificacion = await Eq23kv.unEquipo( eq23kvRes.LOCAL, eq23kvRes.CIRCUITO, eq23kvRes.EQUIPO )
 
-                if(verificacion.length == 0){
-                    const updated = await pool.query('UPDATE eq23kv SET ? WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [eq23kvRes, local, circuito, equipo])
-                
-                    res.json({
+                if( !verificacion.length ) {
+                    const response = await Eq23kv.actualizarEquipo( eq23kvRes, local, circuito, equipo )
+
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
                         mensaje: 'Se ha actualizado un equipo de eq23kv con exito.',
-                        respuesta: await updated
+                        resultado: response
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                 } else {
-                    if(local == eq23kvRes.LOCAL && circuito == eq23kvRes.CIRCUITO && equipo == eq23kvRes.EQUIPO){
-                        const updated = await pool.query('UPDATE eq23kv SET ? WHERE LOCAL = ? AND CIRCUITO = ? AND EQUIPO = ?', [eq23kvRes, local, circuito, equipo])
-                
-                        res.json({
+                    if( local == eq23kvRes.LOCAL && circuito == eq23kvRes.CIRCUITO && equipo == eq23kvRes.EQUIPO ) {
+                        const response = await Eq23kv.actualizarEquipo( eq23kvRes, local, circuito, equipo )
+
+                        respuesta = new Respuesta({
+                            status: 200,
                             codigo: 'Exito',
                             mensaje: 'Se ha actualizado un equipo de eq23kv con exito.',
-                            respuesta: await updated
+                            resultado: response
                         })
+
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                     } else {
-                        res.json({
-                            codigo: 'Error002',
+                        respuesta = new Respuesta({
+                            status: 400,
+                            codigo: 'Error',
                             mensaje: 'Ya existe este equipo.'
                         })
+
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                     }
                 }
 
             } else {
-                res.json({
-                    codigo: 'Error002',
+                respuesta = new Respuesta({
+                    status: 400,
+                    codigo: 'Error',
                     mensaje: 'No ingrese datos que contengan / \\.'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
         } else {
-            res.json({
-                codigo: 'Error002',
+            respuesta = new Respuesta({
+                status: 400,
+                codigo: 'Error',
                 mensaje: 'Ingrese todos los datos para la identificación de un equipo.'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
     } catch (error) {
-        res.json({
-            codigo: 'Error002',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 
 }
@@ -341,7 +471,5 @@ controllerEq23kv.totalBC = async (req, res) => {
 
     res.status(200).json(total_bc)
 }
-
-
 
 module.exports = controllerEq23kv

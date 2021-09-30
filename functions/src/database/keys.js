@@ -7,11 +7,10 @@ const dataDB_Dev = {
     user: 'root',
     password: '',
     port: 3306,
-    database: 'reucord'
+    database: 'u915966213_reucord'
 }
 
 let database = config.environment === 'production' ? dataDB_Prod : dataDB_Dev
-
 
 module.exports = {
     database

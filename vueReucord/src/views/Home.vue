@@ -4,10 +4,6 @@
       <loading></loading>
     </div>
 
-    <div v-else-if="system.error">
-      <error></error>
-    </div>
-
     <div v-else>
       <b-jumbotron class="jumbo">
         <h1 class="titulo">Reucord <samp>Beta</samp></h1>
@@ -113,317 +109,107 @@
               id="accordionExample"
               v-if="system.completed != false"
             >
-              <!-- HOY -->
-              <div class="card">
-                <div class="card-header" id="headingOne">
-                  <h2 class="mb-0">
-                    <button
-                      class="btn btn-link btn-block text-left"
-                      type="button"
-                      data-toggle="collapse"
-                      data-target="#collapseOne"
-                      aria-expanded="true"
-                      aria-controls="collapseOne"
-                    >
-                      {{ dates.todayDate }} - Hoy
-                    </button>
-                  </h2>
-                </div>
-
-                <div
-                  id="collapseOne"
-                  class="collapse show"
-                  aria-labelledby="headingOne"
-                  data-parent="#accordionExample"
-                >
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <h5>PD:</h5>
-                        <hr />
-                        <ul v-if="todayPd.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in todayPd"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPD(
-                                    item.dato.NROPROG,
-                                    item.dato.PDFECHA.substring(0, 10)
-                                  )
-                                "
-                              >
-                                Ver datos
-                              </b-button>
-                              <hr />
-                              <p>Nro: {{ item.dato.NROPROG }}</p>
-                              <p>
-                                Fecha: {{ item.dato.PDFECHA.substring(0, 10) }}
-                              </p>
-                              <p>
-                                FechaTrabajo:
-                                {{ item.dato.FECHATRA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
-                      </div>
-                      <div class="col-md-6">
-                        <h5>PS:</h5>
-                        <hr />
-                        <ul v-if="todayPs.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in todayPs"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPS(
-                                    item.dato.REUFECHA,
-                                    item.dato.REUNRO,
-                                    item.dato.ITEM,
-                                    item.dato.FECHATRABA.substring(0, 10)
-                                  )
-                                "
-                              >
-                                Ver datos
-                              </b-button>
-                              <hr />
-                              <p>Reufecha: {{ item.dato.REUFECHA }}</p>
-                              <p>Reunro: {{ item.dato.REUNRO }}</p>
-                              <p>Item: {{ item.dato.ITEM }}</p>
-                              <p>
-                                Fecha:
-                                {{ item.dato.FECHATRABA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
-                      </div>
-                    </div>
+              <div v-for="(dia, index) in nombreDias" :key="index">
+                <div class="card">
+                  <div class="card-header" id="headingOne">
+                    <h2 class="mb-0">
+                      <button
+                        class="btn btn-link btn-block text-left"
+                        type="button"
+                        data-toggle="collapse"
+                        :data-target="`#collapse${index}`"
+                        aria-expanded="true"
+                        :aria-controls="`collapse${index}`"
+                      >
+                        {{ trabajos.pdTrabajos[index].paraFormatoFecha }} - {{ trabajos.pdTrabajos[index].paraFormatoTexto }}
+                      </button>
+                    </h2>
                   </div>
-                </div>
-              </div>
 
-              <!-- MAÑANA -->
-              <div class="card">
-                <div class="card-header" id="headingTwo">
-                  <h2 class="mb-0">
-                    <button
-                      class="btn btn-link btn-block text-left collapsed"
-                      type="button"
-                      data-toggle="collapse"
-                      data-target="#collapseTwo"
-                      aria-expanded="false"
-                      aria-controls="collapseTwo"
-                    >
-                      {{ dates.tomorrowDate }} - Mañana
-                    </button>
-                  </h2>
-                </div>
-                <div
-                  id="collapseTwo"
-                  class="collapse"
-                  aria-labelledby="headingTwo"
-                  data-parent="#accordionExample"
-                >
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <h5>PD:</h5>
-                        <hr />
-                        <ul v-if="tomorrowPd.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in tomorrowPd"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPD(
-                                    item.dato.NROPROG,
-                                    item.dato.PDFECHA.substring(0, 10)
-                                  )
-                                "
-                                >Ver datos</b-button
-                              >
-                              <hr />
-                              <p>Nro: {{ item.dato.NROPROG }}</p>
-                              <p>
-                                Fecha: {{ item.dato.PDFECHA.substring(0, 10) }}
-                              </p>
-                              <p>
-                                FechaTrabajo:
-                                {{ item.dato.FECHATRA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
-                      </div>
-                      <div class="col-md-6">
-                        <h5>PS:</h5>
-                        <hr />
-                        <ul v-if="tomorrowPs.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in tomorrowPs"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPS(
-                                    item.dato.REUFECHA,
-                                    item.dato.REUNRO,
-                                    item.dato.ITEM,
-                                    item.dato.FECHATRABA.substring(0, 10)
-                                  )
-                                "
-                              >
-                                Ver datos
-                              </b-button>
-                              <hr />
-                              <p>Reufecha: {{ item.dato.REUFECHA }}</p>
-                              <p>Reunro: {{ item.dato.REUNRO }}</p>
-                              <p>Item: {{ item.dato.ITEM }}</p>
-                              <p>
-                                Fecha:
-                                {{ item.dato.FECHATRABA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- PASADO MAÑANA -->
-              <div class="card">
-                <div class="card-header" id="headingThree">
-                  <h2 class="mb-0">
-                    <button
-                      class="btn btn-link btn-block text-left collapsed"
-                      type="button"
-                      data-toggle="collapse"
-                      data-target="#collapseThree"
-                      aria-expanded="false"
-                      aria-controls="collapseThree"
-                    >
-                      {{ dates.dayAfterTomorrowDate }} - Pasado mañana
-                    </button>
-                  </h2>
-                </div>
-                <div
-                  id="collapseThree"
-                  class="collapse"
-                  aria-labelledby="headingThree"
-                  data-parent="#accordionExample"
-                >
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <h5>PD:</h5>
-                        <hr />
-                        <ul v-if="dayAfterTomorrowPd.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in dayAfterTomorrowPd"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPD(
-                                    item.dato.NROPROG,
-                                    item.dato.PDFECHA.substring(0, 10)
-                                  )
-                                "
-                                >Ver datos</b-button
-                              >
-                              <hr />
-                              <p>Nro: {{ item.dato.NROPROG }}</p>
-                              <p>
-                                Fecha: {{ item.dato.PDFECHA.substring(0, 10) }}
-                              </p>
-                              <p>
-                                FechaTrabajo:
-                                {{ item.dato.FECHATRA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
-                      </div>
-                      <div class="col-md-6">
-                        <h5>PS:</h5>
-                        <hr />
-                        <ul v-if="dayAfterTomorrowPs.length > 0">
-                          <li
-                            class="listaTrabajos__ul__li"
-                            v-for="(item, index) in dayAfterTomorrowPs"
-                            :key="index"
-                          >
-                            <div class="">
-                              <samp>Trabajo n°{{ index + 1 }}</samp> |
-                              <b-button
-                                size="sm"
-                                pill 
-                                variant="outline-primary"
-                                v-on:click="
-                                  verDatosPS(
-                                    item.dato.REUFECHA,
-                                    item.dato.REUNRO,
-                                    item.dato.ITEM,
-                                    item.dato.FECHATRABA.substring(0, 10)
-                                  )
-                                "
-                              >
-                                Ver datos
-                              </b-button>
-                              <hr />
-                              <p>Reufecha: {{ item.dato.REUFECHA }}</p>
-                              <p>Reunro: {{ item.dato.REUNRO }}</p>
-                              <p>Item: {{ item.dato.ITEM }}</p>
-                              <p>
-                                Fecha:
-                                {{ item.dato.FECHATRABA.substring(0, 10) }}
-                              </p>
-                            </div>
-                          </li>
-                        </ul>
-                        <p v-else>No hay trabajo</p>
+                  <div
+                    :id="`collapse${index}`"
+                    :class="`collapse ${index === 0 ? 'show' : ''}` "
+                    aria-labelledby="headingOne"
+                    data-parent="#accordionExample"
+                  >
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-md-6">
+                          <h5> {{ trabajos.pdTrabajos[index].tipo }}: </h5>
+                          <hr />
+                          <ul v-if="trabajos.pdTrabajos[index].datosTrabajos.length > 0">
+                            <li
+                              class="listaTrabajos__ul__li"
+                              v-for="(item, index) in trabajos.pdTrabajos[index].datosTrabajos"
+                              :key="index"
+                            >
+                              <div class="">
+                                <samp>Trabajo n°{{ index + 1 }}</samp> |
+                                <b-button
+                                  size="sm"
+                                  pill 
+                                  variant="outline-primary"
+                                  v-on:click="
+                                    verDatosPD(
+                                      item.NROPROG,
+                                      item.PDFECHA.substring(0, 10)
+                                    )
+                                  "
+                                >
+                                  Ver datos
+                                </b-button>
+                                <hr />
+                                <p>Nro: {{ item.NROPROG }}</p>
+                                <p>
+                                  Fecha: {{ item.PDFECHA.substring(0, 10) }}
+                                </p>
+                                <p>
+                                  FechaTrabajo:
+                                  {{ item.FECHATRA.substring(0, 10) }}
+                                </p>
+                              </div>
+                            </li>
+                          </ul>
+                          <p v-else>No hay trabajo</p>
+                        </div>
+                        <div class="col-md-6">
+                          <h5>PS:</h5>
+                          <hr />
+                          <ul v-if="trabajos.psTrabajos[index].datosTrabajos.length > 0">
+                            <li
+                              class="listaTrabajos__ul__li"
+                              v-for="(item, index) in trabajos.psTrabajos[index].datosTrabajos"
+                              :key="index"
+                            >
+                              <div class="">
+                                <samp>Trabajo n°{{ index + 1 }}</samp> |
+                                <b-button
+                                  size="sm"
+                                  pill 
+                                  variant="outline-primary"
+                                  v-on:click="
+                                    verDatosPS(
+                                      item.REUFECHA,
+                                      item.REUNRO,
+                                      item.ITEM
+                                    )
+                                  "
+                                >
+                                  Ver datos
+                                </b-button>
+                                <hr />
+                                <p>Reufecha: {{ item.REUFECHA }}</p>
+                                <p>Reunro: {{ item.REUNRO }}</p>
+                                <p>Item: {{ item.ITEM }}</p>
+                                <p>
+                                  Fecha:
+                                  {{ item.FECHATRABA.substring(0, 10) }}
+                                </p>
+                              </div>
+                            </li>
+                          </ul>
+                          <p v-else>No hay trabajo</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -456,29 +242,29 @@
         </div>
         <hr />
         <ul>
-          <li>LOCAL: {{ getPd.LOCAL }}</li>
-          <li>CIRCUITO: {{ getPd.CIRCUITO }}</li>
-          <li>EQUIPO: {{ getPd.EQUIPO }}</li>
-          <li>NROPROG: {{ getPd.NROPROG }}</li>
-          <li>PDTRASMI: {{ getPd.PDTRASMI }}</li>
-          <li>PDFECHA: {{ getPd.PDFECHA }}</li>
-          <li>HORA TRASMITIDA: {{ getPd.HORATRAS }}</li>
-          <li>ESTADO: {{ getPd.ESTADO }}</li>
-          <li>TRABAJO: {{ getPd.TRABAJO }}</li>
-          <li>RESPONSABLE: {{ getPd.RESPONSABLE }}</li>
-          <li>OBSERVACION: {{ getPd.OBSERVACION }}</li>
-          <li>JEFATURA: {{ getPd.JEFATURA }}</li>
-          <li>NRO_REC: {{ getPd.NRO_REC }}</li>
-          <li>FECHA_REC: {{ getPd.FECHA_REC }}</li>
-          <li>RECIBIDO POR: {{ getPd.RECIBIDO }}</li>
-          <li>RESULTADO: {{ getPd.RESULTADO }}</li>
+          <li>LOCAL: {{ pd.LOCAL }}</li>
+          <li>CIRCUITO: {{ pd.CIRCUITO }}</li>
+          <li>EQUIPO: {{ pd.EQUIPO }}</li>
+          <li>NROPROG: {{ pd.NROPROG }}</li>
+          <li>PDTRASMI: {{ pd.PDTRASMI }}</li>
+          <li>PDFECHA: {{ pd.PDFECHA ? pd.PDFECHA.substring(0, 10) : '' }}</li>
+          <li>HORA TRASMITIDA: {{ pd.HORATRAS }}</li>
+          <li>ESTADO: {{ pd.ESTADO }}</li>
+          <li>TRABAJO: {{ pd.TRABAJO }}</li>
+          <li>RESPONSABLE: {{ pd.RESPONSABLE }}</li>
+          <li>OBSERVACION: {{ pd.OBSERVACION }}</li>
+          <li>JEFATURA: {{ pd.JEFATURA }}</li>
+          <li>NRO_REC: {{ pd.NRO_REC }}</li>
+          <li>FECHA_REC: {{ pd.FECHA_REC ? pd.FECHA_REC.substring(0, 10) : '' }}</li>
+          <li>RECIBIDO POR: {{ pd.RECIBIDO }}</li>
+          <li>RESULTADO: {{ pd.RESULTADO }}</li>
           <hr />
           <li>
             Trabajos:
-            <div class="container" v-if="getPdTrabajos.length > 0">
-              <ul v-for="(trabajo, index) in getPdTrabajos" :key="index">
+            <div class="container" v-if="pdTrabajos.length > 0">
+              <ul v-for="(trabajo, index) in pdTrabajos" :key="index">
                 <li>
-                  {{ trabajo.FECHATRA }}
+                  {{ trabajo.FECHATRA ? trabajo.FECHATRA.substring(0, 10) : '' }}
                 </li>
                 <li>
                   {{ trabajo.HORAINI }}
@@ -530,61 +316,77 @@
           <hr>
               <ul>
                   <li>
-                      Reufecha: {{getPs.REUFECHA}}
+                      Reufecha: {{ps.REUFECHA}}
                   </li>
                   <li>
-                      Reunro: {{getPs.REUNRO}}
+                      Reunro: {{ps.REUNRO}}
                   </li>
                   <li>
-                      Item: {{getPs.ITEM}}
+                      Item: {{ps.ITEM}}
                   </li>
                   <li>
-                      Local: {{getPs.LOCAL}}
+                      Local: {{ps.LOCAL}}
                   </li>
                   <li>
-                      Circuito: {{getPs.CIRCUITO}}
+                      Circuito: {{ps.CIRCUITO}}
                   </li>
                   <li>
-                      Equipo: {{getPs.EQUIPO}}
+                      Equipo: {{ps.EQUIPO}}
                   </li>
                   <li>
-                      Trabajo: {{getPs.TRABAJO}}
+                      Trabajo: {{ps.TRABAJO}}
                   </li>
                   <li>
-                      Aut: {{getPs.AUT}}
+                      Aut: {{ps.AUT}}
                   </li>
                   <li>
-                      Estado: {{getPs.ESTADO}}
+                      Estado: {{ps.ESTADO}}
                   </li>
                   <li>
-                      Fecha de trabajo: {{getPs.FECHATRABA}}
+                      Observación: {{ps.OBSERVAC}}
                   </li>
                   <li>
-                      Hora inicio: {{getPs.HORADESDE}}
+                      Resultado: {{ps.RESULTADO}}
                   </li>
                   <li>
-                      Hora fin: {{getPs.HORAHASTA}}
+                      Responsable: {{ps.RESPONSABLE}}
                   </li>
                   <li>
-                      Observación: {{getPs.OBSERVAC}}
+                      Ampliación: {{ps.AMPLIACION}}
                   </li>
                   <li>
-                      Resultado: {{getPs.RESULTADO}}
+                      Nro de reclamo: {{ps.NRO_REC}}
                   </li>
                   <li>
-                      Responsable: {{getPs.RESPONSABLE}}
+                      Fecha de reclamo: {{ ps.FECHA_REC ? ps.FECHA_REC.substring(0, 10) : '' }}
                   </li>
+                  <hr />
                   <li>
-                      Ampliación: {{getPs.AMPLIACION}}
+                    Trabajos:
+                    <div class="container" v-if="psTrabajos.length > 0">
+                      <ul v-for="(trabajo, index) in psTrabajos" :key="index">
+                        <li>
+                            Fecha de trabajo: {{ trabajo.FECHATRABA ? trabajo.FECHATRABA.substring(0, 10) : '' }}
+                        </li>
+                        <li>
+                            Hora inicio: {{trabajo.HORADESDE}}
+                        </li>
+                        <li>
+                            Hora fin: {{trabajo.HORAHASTA}}
+                        </li>  
+                        <hr />
+                      </ul>
+                    </div>
+                    <div class="container" v-else>
+                      <label class="mt-2"
+                        >No hay trabajos para este pedido de disponibilidad</label
+                      >
+                    </div>
                   </li>
-                  <li>
-                      Nro de reclamo: {{getPs.NRO_REC}}
-                  </li>
-                  <li>
-                      Fecha de reclamo: {{getPs.FECHA_REC}}
-                  </li>
-              </ul>       
+              </ul>  
+
           <hr>
+
           <div class="container">
               <!-- <b-button class="mt-2" variant="outline-success" block @click="generarInforme">Generar informe</b-button> -->
               <b-button class="mt-2" variant="outline-danger" block @click="hideModalVista('modalVistaPs')">Volver</b-button>
@@ -599,7 +401,6 @@
 // @ is an alias to /src
 import { mapMutations, mapActions, mapGetters } from "vuex";
 import loading from "@/components/Loading";
-import error from "@/components/Error";
 
 export default {
   name: "Home",
@@ -609,106 +410,66 @@ export default {
       system: {
         completed: false,
         loading: false,
-        error: false,
         loadingModal: false
       },
-
-      dates: {
-        todayDate: "",
-        tomorrowDate: "",
-        dayAfterTomorrowDate: ""
+      nombreDias: ['Hoy', 'Mañana', 'Pasado mañana'],
+      trabajos: {
+        pdTrabajos: [],
+        psTrabajos: []
       },
-
-      allPdTrabajosForDate: {
-        today: [],
-        tomorrow: [],
-        dayAfterTomorrow: []
-      },
-
-      allPdDatosForDate: [],
-
-      allPsTrabajosForDate: {
-        today: [],
-        tomorrow: [],
-        dayAfterTomorrow: []
-      }
-    };
+      pd: {},
+      pdTrabajos: [],
+      ps: {},
+      psTrabajos: []
+    }
   },
   components: {
     loading,
-    error
-  },
-  async created() {
-    try {
-      this.loading = true;
-      const res = await this.axios.get("/getListWorksForDate");
-
-      if (!res.data.codigo.includes("Error")) {
-        this.system.completed = res.data.respuesta.completed;
-        this.dates = res.data.respuesta.dates;
-        this.allPdTrabajosForDate = res.data.respuesta.pd;
-        this.allPdDatosForDate = res.data.respuesta.allPdDatosForDate;
-        this.allPsTrabajosForDate = res.data.respuesta.ps;
-      } else {
-      }
-    } catch (error) {
-      this.error = true;
-    } finally {
-      this.loading = false;
-    }
   },
   methods: {
     ...mapMutations(['setPsState', "setPdState", "setPdTrabajosState"]),
     async verDatosPD(nro, fecha) {
       try {
         this.system.loadingModal = true
-        this.$refs["modalVistaPd"].show();
+        this.$refs["modalVistaPd"].show()
 
-        console.log(nro, fecha)
+        const nroprog = parseInt(nro)
+        const pdfecha = new Date(`${fecha}T13:00:00.000Z`)
 
-        let dia = fecha.substring(0, 2);
-        let mes = fecha.substring(3, 5);
-        let anho = fecha.substring(6, 10);
+        let dia = pdfecha.getDate()
+        let mes = pdfecha.getMonth() + 1
+        let anho = pdfecha.getFullYear()
 
-        const res = await this.axios.post(`pdOne/${nro}/${dia}/${mes}/${anho}`);
+        this.pd = await this.$store.dispatch('getPd', {
+          nroprog, dia, mes, anho
+        })
 
-        const resTra = await this.axios.post(
-          `/pdOneTrabajos/${nro}/${dia}/${mes}/${anho}`
-        );
+        this.pdTrabajos = await this.$store.dispatch('getPdTrabajo', {
+          nroprog, dia, mes, anho
+        })
 
-        if (
-          !res.data.codigo.includes("Error") &&
-          !resTra.data.codigo.includes("Error")
-        ) {
-          this.setPdState(res.data.respuesta[0]);
-          this.setPdTrabajosState(resTra.data.respuesta);
-        } else {
-        }
       } catch (error) {
         console.log('error', error)
       } finally {
         this.system.loadingModal = false
       }
     },
-    async verDatosPS(reufecha, reunro, item, fecha) {
+    async verDatosPS(reufecha, reunro, item) {
       try {
         this.system.loadingModal = true
         this.$refs["modalVistaPs"].show();
 
-        console.log(reufecha, reunro, item, fecha)
+        this.ps = await this.$store.dispatch('getPs', {
+          reufecha, reunro, item
+        })
 
-        let dia = fecha.substring(8, 10);
-        let mes = fecha.substring(5, 7);
-        let anho = fecha.substring(0, 4);
+        this.psTrabajos = await this.$store.dispatch('getPsTrabajo', {
+          reufecha, reunro, item
+        })
 
-        const res = await this.axios.post(`psOne/${reufecha}/${reunro}/${item}/${dia}/${mes}/${anho}`);
-
-        if ( !res.data.codigo.includes("Error") ) {
-          this.setPsState(res.data.respuesta[0]);
-        } else {
-        }
       } catch (error) {
         console.log('error', error)
+        this.$store.dispatch('setError', error)
       } finally {
         this.system.loadingModal = false
       }
@@ -717,38 +478,23 @@ export default {
       this.$refs[modalVista].hide();
     }
   },
-  computed: {
-    ...mapGetters(['getPs', "getPd", "getPdTrabajos", "getLogeo"]),
-    todayPd: function() {
-      return this.allPdTrabajosForDate.today.filter(
-        item => item.suspendido == false
-      );
-    },
-    tomorrowPd: function() {
-      return this.allPdTrabajosForDate.tomorrow.filter(
-        item => item.suspendido == false
-      );
-    },
-    dayAfterTomorrowPd: function() {
-      return this.allPdTrabajosForDate.dayAfterTomorrow.filter(
-        item => item.suspendido == false
-      );
-    },
-    todayPs: function() {
-      return this.allPsTrabajosForDate.today.filter(
-        item => item.suspendido == false
-      );
-    },
-    tomorrowPs: function() {
-      return this.allPsTrabajosForDate.tomorrow.filter(
-        item => item.suspendido == false
-      );
-    },
-    dayAfterTomorrowPs: function() {
-      return this.allPsTrabajosForDate.dayAfterTomorrow.filter(
-        item => item.suspendido == false
-      );
+  async created() {
+    try {
+      this.loading = true
+      
+      this.trabajos = await this.$store.dispatch('listaDeTrabajosPorDia')
+
+      this.system.completed = true
+
+    } catch (error) {
+      console.log(error)
+      this.$store.dispatch('setError', error)
+    } finally {
+      this.loading = false;
     }
+  },
+  computed: {
+    ...mapGetters(['getPs', "getPd", "getPdTrabajos", "getPsTrabajos", "getLogeo"]),
   }
 };
 </script>

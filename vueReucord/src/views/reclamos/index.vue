@@ -4,10 +4,6 @@
             <loading></loading>
         </div>
         
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
-        
         <div v-else>
             <div class="row mb-3 mt-3">
                 <div class="col-md-8">
@@ -191,34 +187,34 @@
                 <hr>
                     <ul>
                         <li>
-                            LOCAL: {{getReclamo.LOCAL}}
+                            LOCAL: {{reclamoDatos.LOCAL}}
                         </li>
                         <li>
-                            OTRADEP: {{getReclamo.OTRADEP}}
+                            OTRADEP: {{reclamoDatos.OTRADEP}}
                         </li>
                         <li>
-                            NROOTRADE: {{getReclamo.NROOTRADE}}
+                            NROOTRADE: {{reclamoDatos.NROOTRADE}}
                         </li>
                         <li>
-                            DMEDNRO: {{getReclamo.DMEDNRO}}
+                            DMEDNRO: {{reclamoDatos.DMEDNRO}}
                         </li>
                         <li>
-                            DMED: {{getReclamo.DMED}}
+                            DMED: {{reclamoDatos.DMED}}
                         </li>
                         <li>
-                            HORATRASM: {{getReclamo.HORATRASM}}
+                            HORATRASM: {{reclamoDatos.HORATRASM}}
                         </li>
                         <li>
-                            FECHATRASM: {{ getReclamo.FECHATRASM ? new Date(getReclamo.FECHATRASM).toISOString().substring(0,10) : null }}
+                            FECHATRASM: {{ reclamoDatos.FECHATRASM ? new Date(reclamoDatos.FECHATRASM).toISOString().substring(0,10) : null }}
                         </li>
                         <li>
-                            TRASMPOR: {{getReclamo.TRASMPOR}}
+                            TRASMPOR: {{reclamoDatos.TRASMPOR}}
                         </li>
                         <li>
-                            RECIBPOR: {{getReclamo.RECIBPOR}}
+                            RECIBPOR: {{reclamoDatos.RECIBPOR}}
                         </li>
                         <li>
-                            RECLAMO: {{getReclamo.RECLAMO}}
+                            RECLAMO: {{reclamoDatos.RECLAMO}}
                         </li>
                     </ul>
                     
@@ -255,7 +251,6 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 import XLSX from 'xlsx'
 import download from 'js-file-download';
  
@@ -267,7 +262,6 @@ export default {
         return {
             system: {
                 loading: true,
-                error: false,
             },
             indexPD: 0,
             nombreExcel: '',
@@ -285,6 +279,7 @@ export default {
                 MES: '',
                 ANHO: ''
             },
+            reclamoDatos: {},
             datos: [],
             datosOp: [],
             datosTotal: [],
@@ -293,35 +288,22 @@ export default {
         }
     },
     components: {
-        loading,
-        error
+        loading
     },
     methods: {
-        ...mapMutations(['setReclamoMutation']),
-        formatDate (date) {
+        formatDate ( date ) {
             
-            if (date) {
-                return new Date( `${date.substring(0,10).replace('-', '/').replace('-', '/')} 01:00:00` )
+            if ( date ) {
+                return new Date(`${date.substring(0,10)}T13:00:00`)
             }
 
             return null
         },
         async mostrarTodo(){
-            try {
-                const res = await this.axios.post('/reclamos')
-                console.log(res)
+            const res = await this.$store.dispatch('listaReclamos')
 
-                if(!res.data.codigo.includes('Error')){
-                    this.datosTotal = res.data.respuesta
-                    this.datosOp = res.data.respuesta
-                } else {
-                    console.log(error)
-                    this.system.error = true
-                }
-            } catch (error) {
-                this.system.error = true
-                console.log(error)
-            } 
+            this.datosTotal = res
+            this.datosOp = res 
         },
         aviso(variant = null){
             this.$bvToast.toast('Se a agregado los datos correctamente', {
@@ -351,24 +333,20 @@ export default {
             this.reclamo.DIA = fechatrasm.getDate()
             this.reclamo.MES = fechatrasm.getMonth()+1
             this.reclamo.ANHO = fechatrasm.getFullYear()
-            console.log(this.reclamo)
+
             this.$refs['modalElimReclamo'].show()
         },
         hideModalElim() {
             this.$refs['modalElimReclamo'].hide()
         },
         async showModalVista(dato, index) {
-           
-            console.log('dato.FECHATRASM', dato.FECHATRASM)
-
             this.reclamo.DMEDNRO = dato.DMEDNRO
             const fechatrasm = this.formatDate(dato.FECHATRASM)
             this.reclamo.DIA = fechatrasm.getDate()
             this.reclamo.MES = fechatrasm.getMonth()+1
             this.reclamo.ANHO = fechatrasm.getFullYear()
-            console.log(this.reclamo)
 
-            this.setReclamoMutation(dato)
+            this.reclamoDatos = dato
 
             this.$refs['modalVistaReclamo'].show()
         },
@@ -393,25 +371,23 @@ export default {
                 link.remove();
                 
             } catch (error) {
-                this.system.error = true
                 console.log(error)
             }
         },
         async eliminarReclamo(){
             try {
-                const res = await this.axios.delete(`/reclamoDelete/${this.reclamo.DMEDNRO}/${this.reclamo.DIA}/${this.reclamo.MES}/${this.reclamo.ANHO}`)
-                console.log(res)
+                await this.$store.dispatch('eliminarReclamo', {
+                    dmednro: this.reclamo.DMEDNRO,
+                    dia: this.reclamo.DIA,
+                    mes: this.reclamo.MES,
+                    anho: this.reclamo.ANHO,
+                })
+                
                 this.hideModalElim()
                 
-                if(!res.data.codigo.includes('Error')){
-                    // No hay error
-                    this.mostrarTodo()
-                    this.actualizarDatos()
-                }else {
-                    // Si hay error
-                    console.log(res.data.codigo)
-                    console.log(res.data.mensaje)
-                }
+                // No hay error
+                this.mostrarTodo()
+                this.actualizarDatos()
                 
             } catch (error) {
                 console.log(error)
@@ -555,23 +531,12 @@ export default {
             }
         }
     },
-    mounted(){
-        this.setReclamoMutation()
-    },
+    mounted(){},
     async created() {
         this.system.loading = true
         try {
-            const res = await this.axios.post('/reclamos')
-
-            if(!res.data.codigo.includes('Error')){
-                this.datosTotal = res.data.respuesta
-                this.datosOp = res.data.respuesta
-            } else {
-                console.log(error)
-                this.system.error = true
-            }
+            await this.mostrarTodo()
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally{
             this.system.loading = false
@@ -581,7 +546,6 @@ export default {
         this.actualizarDatos()
     },
     computed: {
-        ...mapGetters(['getReclamo']),
         totalRow() {
             return this.datosOp.length
         },

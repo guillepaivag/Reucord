@@ -3,10 +3,6 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
 
         <div v-else>
             <div class="row mb-3 mt-3">
@@ -194,60 +190,60 @@
                 <hr>
                     <ul>
                         <li>
-                            Reufecha: {{getPs.REUFECHA}}
+                            Reufecha: {{psDatos.REUFECHA}}
                         </li>
                         <li>
-                            Reunro: {{getPs.REUNRO}}
+                            Reunro: {{psDatos.REUNRO}}
                         </li>
                         <li>
-                            Item: {{getPs.ITEM}}
+                            Item: {{psDatos.ITEM}}
                         </li>
                         <li>
-                            Local: {{getPs.LOCAL}}
+                            Local: {{psDatos.LOCAL}}
                         </li>
                         <li>
-                            Circuito: {{getPs.CIRCUITO}}
+                            Circuito: {{psDatos.CIRCUITO}}
                         </li>
                         <li>
-                            Equipo: {{getPs.EQUIPO}}
+                            Equipo: {{psDatos.EQUIPO}}
                         </li>
                         <li>
-                            Trabajo: {{getPs.TRABAJO}}
+                            Trabajo: {{psDatos.TRABAJO}}
                         </li>
                         <li>
-                            Aut: {{getPs.AUT}}
+                            Aut: {{psDatos.AUT}}
                         </li>
                         <li>
-                            Estado: {{getPs.ESTADO}}
+                            Estado: {{psDatos.ESTADO}}
                         </li>
                         <li>
-                            Suspendido/Modificado: {{getPs.SUSMOD}}
+                            Suspendido/Modificado: {{psDatos.SUSMOD}}
                         </li>
                         <li>
-                            Observación: {{getPs.OBSERVAC}}
+                            Observación: {{psDatos.OBSERVAC}}
                         </li>
                         <li>
-                            Resultado: {{getPs.RESULTADO}}
+                            Resultado: {{psDatos.RESULTADO}}
                         </li>
                         <li>
-                            Responsable: {{getPs.RESPONSABLE}}
+                            Responsable: {{psDatos.RESPONSABLE}}
                         </li>
                         <li>
-                            Ampliación: {{getPs.AMPLIACION}}
+                            Ampliación: {{psDatos.AMPLIACION}}
                         </li>
                         <li>
-                            Nro de reclamo: {{getPs.NRO_REC}}
+                            Nro de reclamo: {{psDatos.NRO_REC}}
                         </li>
                         <li>
-                            Fecha de reclamo: {{ getPs.FECHA_REC ? getPs.FECHA_REC.substring(0,10) : null }}
+                            Fecha de reclamo: {{ psDatos.FECHA_REC ? psDatos.FECHA_REC.substring(0,10) : null }}
                         </li>
 
                         <hr>
 
                         <li>
                             Trabajos:
-                            <div class="container" v-if="getPsTrabajos.length > 0">
-                                <ul v-for="(trabajo, index) in getPsTrabajos" :key="index">
+                            <div class="container" v-if="psTrabajosDatos.length > 0">
+                                <ul v-for="(trabajo, index) in psTrabajosDatos" :key="index">
                                     <li>
                                         {{ trabajo.FECHATRABA ? trabajo.FECHATRABA.substring(0,10) : null }}
                                     </li>
@@ -298,7 +294,6 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 import XLSX from 'xlsx'
 import download from 'js-file-download';
  
@@ -310,7 +305,6 @@ export default {
         return {
             system: {
                 loading: true,
-                error: false,
             },
             indexPS: 0,
             nombreExcel: '',
@@ -328,6 +322,8 @@ export default {
                 REUNRO: '',
                 ITEM: '',
             },
+            psDatos: {},
+            psTrabajosDatos: [],
             datos: [],
             datosSubTotal: [],
             datosOp: [],
@@ -337,32 +333,23 @@ export default {
     },
     components: {
         loading,
-        error
     },
     methods: {
-        ...mapMutations(['setPsState', 'setPsTrabajosState']),
         formatDate (date) {
             if (date) {
-                return new Date( `${date.substring(0,10).replace('-', '/').replace('-', '/')} 01:00:00` )
+                return new Date( `${date.substring(0,10).replace('-', '/').replace('-', '/')}T13:00:00` )
             }
 
             return null
         },
         async mostrarTodo(){
             try {
-                const res = await this.axios.post('/ps')
-            
-                if(!res.data.codigo.includes('Error')){
-                    console.log(res)
-                    this.datosTotal = res.data.respuesta
-                    this.datosOp = res.data.respuesta
-                }else {
-                    console.log(error)
-                    this.system.error = true
-                }
+                const res = await this.$store.dispatch('listaPs')
+
+                this.datosTotal = res
+                this.datosOp = res
             } catch(error) {
                 console.log(error)
-                this.system.error = true
             } finally {
                 this.system.loading = false
             }
@@ -420,12 +407,16 @@ export default {
             this.ps.REUNRO = dato.REUNRO
             this.ps.ITEM = dato.ITEM
             
-            this.setPsState(dato)
+            this.psDatos = dato
 
             try {
-                const rows = await this.axios.post(`/psOneTrabajos/${this.ps.REUFECHA}/${this.ps.REUNRO}/${this.ps.ITEM}`)
-                console.log('rows.data', rows.data)
-                this.setPsTrabajosState(rows.data.respuesta)
+                const rows = await this.$store.dispatch('getPsTrabajo', {
+                    reufecha: dato.REUFECHA,
+                    reunro: dato.REUNRO,
+                    item: dato.ITEM,
+                })
+                
+                this.psTrabajosDatos = rows
             } catch (error) {
                 console.log(error)
             }
@@ -461,18 +452,17 @@ export default {
         },
         async eliminarPS(){
             try {
-                const res = await this.axios.delete(`/psDelete/${this.ps.REUFECHA}/${this.ps.REUNRO}/${this.ps.ITEM}`)
+                const res = await this.$store.dispatch('eliminarProgramacionSemanal', {
+                    reufecha: this.ps.REUFECHA,
+                    reunro: this.ps.REUNRO,
+                    item: this.ps.ITEM,
+                })
                 
-                if(!res.data.codigo.includes('Error')){
-                    this.hideModalEliminacion()
-                    this.mostrarTodo()
-                    this.actualizarDatos()
-                } else {
-                    this.system.error = true
-                }
+                this.hideModalEliminacion()
+                this.mostrarTodo()
+                this.actualizarDatos()
                 
             } catch (error) {
-                this.system.error = true
                 console.log(error)
             }
         },
@@ -605,9 +595,6 @@ export default {
             }
         }
     },
-    mounted(){
-        this.setPsState()
-    },
     async created() {
         this.mostrarTodo()
     },
@@ -615,7 +602,6 @@ export default {
         this.actualizarDatos()
     },
     computed: {
-        ...mapGetters(['getPs', 'getPsTrabajos']),
         totalRow() {
             return this.datosOp.length
         },

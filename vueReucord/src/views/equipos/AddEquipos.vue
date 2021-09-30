@@ -3,9 +3,6 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
         <div class="row mt-4" v-else>
             <div class="col-md-9">
                 <div>
@@ -66,19 +63,16 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 
 export default {
     name: 'addEquipo',
-     components: {
+    components: {
         loading,
-        error
     },
     data() {
         return {
             system: {
                 loading: true,
-                error: false
             },
             eq23kv: {
                 LOCAL: '',
@@ -108,7 +102,7 @@ export default {
         async filtroLocal(){
             this.list.localesSubConjunto = []
 
-            if(this.eq23kv.local != ''){
+            if( this.eq23kv.local ){
                 let cont = 0
                 for(let i = 0; i < this.list.locales.length; i++){
                     if(cont < this.list.cantidadMostrar){
@@ -119,30 +113,22 @@ export default {
                     }
                 }
 
-                try {
-                    // lista circuito
-                    const circuitoDB = await this.axios.post(`/eq23kvCircuitoPorLocal/${this.eq23kv.LOCAL}`)
-                    if(!circuitoDB.data.codigo.includes('Error')){
-                        this.list.circuito = await circuitoDB.data.respuesta
-                    
-                        if(this.list.circuito.length != 0){
-                            // pushs los n primeros
-                            this.list.circuitoSubConjunto = []
-                            for(let i = 0; i < this.list.cantidadMostrar; i++){
-                                this.list.circuitoSubConjunto.push(this.list.circuito[i])
-                            }
-                        }else{
-                            this.eq23kv.CIRCUITO = ''
-                            this.eq23kv.EQUIPO = ''
-                            this.list.circuitoSubConjunto = []
-                            this.list.equipoSubConjunto = []
-                        }
-                    } else {
-                        console.log(circuitoDB.data.mensaje)
-                        console.log(circuitoDB.data.respuesta)
+                // lista circuito
+                this.list.circuito = await this.$store.dispatch('listaCircuitoPorLocal', {
+                    local: this.eq23kv.LOCAL
+                }) ?? []
+                
+                if(this.list.circuito.length != 0){
+                    // pushs los n primeros
+                    this.list.circuitoSubConjunto = []
+                    for(let i = 0; i < this.list.cantidadMostrar; i++){
+                        this.list.circuitoSubConjunto.push(this.list.circuito[i])
                     }
-                } catch (error) {
-                    console.log(error)
+                }else{
+                    this.eq23kv.CIRCUITO = ''
+                    this.eq23kv.EQUIPO = ''
+                    this.list.circuitoSubConjunto = []
+                    this.list.equipoSubConjunto = []
                 }
 
             }else{
@@ -170,28 +156,23 @@ export default {
                     }
                 }
 
-                try {
-                    // lista equipo
-                    const equipoDB = await this.axios.post(`/eq23kvEquipoPorLocalCircuito/${this.eq23kv.LOCAL}/${this.eq23kv.CIRCUITO}`)
-                    if(!equipoDB.data.codigo.includes('Error')){
-                        this.list.equipo = await equipoDB.data.respuesta
+                // lista equipo
+                this.list.equipo = await this.$store.dispatch('listaEquipoPorLocalCircuito', {
+                    local: this.eq23kv.LOCAL,
+                    circuito: this.eq23kv.CIRCUITO
+                }) ?? []
+                const equipoDB = await this.axios.post(`/eq23kvEquipoPorLocalCircuito/${this.eq23kv.LOCAL}/${this.eq23kv.CIRCUITO}`)
+                this.list.equipo = await equipoDB.data.respuesta
 
-                        if(this.list.equipo.length != 0){
-                            // pushs los n primeros
-                            this.list.equipoSubConjunto = []
-                            for(let i = 0; i < this.list.cantidadMostrar; i++){
-                                this.list.equipoSubConjunto.push(this.list.equipo[i])
-                            }
-                        }else{
-                            this.eq23kv.EQUIPO = ''
-                            this.list.equipoSubConjunto = []
-                        }
-                    } else {
-                        console.log(equipoDB.data.mensaje)
-                        console.log(equipoDB.data.respuesta)
+                if(this.list.equipo.length != 0){
+                    // pushs los n primeros
+                    this.list.equipoSubConjunto = []
+                    for(let i = 0; i < this.list.cantidadMostrar; i++){
+                        this.list.equipoSubConjunto.push(this.list.equipo[i])
                     }
-                } catch (error) {
-                    console.log(error)
+                }else{
+                    this.eq23kv.EQUIPO = ''
+                    this.list.equipoSubConjunto = []
                 }
 
             }else{
@@ -240,32 +221,19 @@ export default {
                     && this.verificacionDeCaracteres(this.eq23kv.EQUIPO)
                     && this.verificacionDeCaracteres(this.eq23kv.BARRA))
                 {
-                    try {
-                        this.eq23kvDatosTrim()
+                    this.eq23kvDatosTrim()
 
-                        const res = await this.axios.post('/eq23kvAdd', this.eq23kv)
-                        
-                        if(!res.data.codigo.includes('Error')){
-                            const jsonDataNew = JSON.parse(res.config.data)
-                            this.alternarAlertaVisible(true)
-                            this.mensaje.color = 'alert-success'
-                            this.mensaje.titulo = 'Nuevo equipo'
-                            this.mensaje.msg = res.data.mensaje
-                            
-                            this.mensaje.lista.push(jsonDataNew.LOCAL)
-                            this.mensaje.lista.push(jsonDataNew.CIRCUITO)
-                            this.mensaje.lista.push(jsonDataNew.EQUIPO)
-                            this.mensaje.lista.push(jsonDataNew.BARRA)
-                        } else {
-                            this.alternarAlertaVisible(true)
-                            this.mensaje.color = 'alert-danger'
-                            this.mensaje.titulo = 'No se agrego el equipo'
-                            this.mensaje.msg = res.data.mensaje
-                        }
-                        
-                    } catch (error) {
-                        this.system.error = true
-                    }
+                    const res = await this.axios.post('/eq23kvAdd', this.eq23kv)
+                    
+                    this.alternarAlertaVisible(true)
+                    this.mensaje.color = 'alert-success'
+                    this.mensaje.titulo = 'Nuevo equipo'
+                    this.mensaje.msg = res.mensaje
+                    
+                    this.mensaje.lista.push(this.eq23kv.LOCAL)
+                    this.mensaje.lista.push(this.eq23kv.CIRCUITO)
+                    this.mensaje.lista.push(this.eq23kv.EQUIPO)
+                    this.mensaje.lista.push(this.eq23kv.BARRA)
                     
                 } else {
                     this.alternarAlertaVisible(true)
@@ -309,23 +277,13 @@ export default {
     },
     async mounted() {
         try {
-            const localesDB = await this.axios.post('/locales')
+            this.list.locales = await this.$store.dispatch('listaLocales') ?? []
             
-            if(!localesDB.data.codigo.includes('Error')){
-                this.list.locales = await localesDB.data.respuesta
-
-                for(let i = 0; i < this.list.cantidadMostrar; i++){
-                    this.list.localesSubConjunto.push(this.list.locales[i])
-                }
-            } else {
-                this.system.error = true
-                console.log(localesDB.data.codigo)
-                console.log(localesDB.data.mensaje)
-                console.log(localesDB.data.respuesta)
+            for(let i = 0; i < this.list.cantidadMostrar; i++){
+                this.list.localesSubConjunto.push(this.list.locales[i])
             }
 
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally {
             this.system.loading = false

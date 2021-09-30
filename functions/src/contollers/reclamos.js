@@ -2,24 +2,35 @@ const controllerReclamos = {}
 const pool = require('../database/index')
 const path = require('path')
 const Excel = require('exceljs')
-const {verificacionDeCaracteres, dataConversionReclamos} = require('../algoritmos/general')
+const {verificacionDeCaracteres, dataConversionReclamos} = require('../helpers/general')
+const Reclamo = require('../models/Reclamo')
+const Respuesta = require('../models/Respuesta')
 
 controllerReclamos.list = async (req, res) => {
+    
+    let respuesta = null
+
     try {
-        
-        const reclamos = await pool.query('SELECT * FROM reclamos ORDER BY FECHATRASM DESC')
-        
-        res.status(200).json({
+        const reclamos = await Reclamo.listaReclamos()
+
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Lista de reclamos enviada con exito',
-            respuesta: await reclamos
+            resultado: reclamos
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+        
     } catch (error) {
-        res.json({
-            codigo: 'Error0001',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
@@ -27,60 +38,81 @@ controllerReclamos.listPagination = async (req, res) => {
     const { page, limit } = req.params
 
     // calculate offset
-    let offset = (page - 1) * limit
     let limitAux = parseInt(limit)
-
+    let offset = (parseInt(page) - 1) * limitAux
+    let respuesta = null
 
     try {
-        const reclamos = await pool.query('SELECT * FROM reclamos LIMIT ? OFFSET ?', [limitAux, offset])
+        const reclamos = await Reclamo.obtenerDatosPaginados( limitAux, offset )
         
-        res.status(200).json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
             mensaje: 'Lista de reclamos páginada enviada con exito',
-            respuesta: await reclamos
+            resultado: reclamos
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     } catch (error) {
-        res.json({
-            codigo: 'Error0001',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerReclamos.oneReclamos = async (req, res) => {
     const {dmednro, dia, mes, anho} = req.params
+    let respuesta = null
 
     try {
-        const fechatrasmString = anho + '/' + mes + '/' + dia
-        const fechatrasm = new Date(fechatrasmString)
+        let anhoValido = anho
+        let mesValido = mes.length == 1 ? `0${mes}` : mes
+        let diaValido = dia.length == 1 ? `0${dia}` : dia
+        let fechaString = `${ anhoValido }-${ mesValido }-${ diaValido }T13:00:00.000Z`
+        const fechatrasm = new Date(fechaString)
 
-        const reclamo = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [dmednro, fechatrasm])
+        const reclamo = await Reclamo.obtenerReclamo( dmednro, fechatrasm )
         
-        res.status(200).json({
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
-            mensaje: 'Reclamo enviado con exito',
-            respuesta: reclamo
+            mensaje: 'Reclamo enviado con exito.',
+            resultado: reclamo
         })
+        
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+        
     } catch (error) {
-        res.json({
-            codigo: 'Error0001',
-            mensaje: 'Hubo un problema',
-            respuesta: error
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
+            mensaje: 'Hubo un problema.',
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
     }
 }
 
 controllerReclamos.informeXLSX_Reclamos = async (req, res) => {
     const {dmednro, dia, mes, anho} = req.params
     
-    const fechatrasmString = anho + '/' + mes + '/' + dia
-    const fechatrasm = new Date(fechatrasmString)
+    let anhoValido = anho
+    let mesValido = mes.length == 1 ? `0${mes}` : mes
+    let diaValido = dia.length == 1 ? `0${dia}` : dia
+    let fechaString = `${ anhoValido }-${ mesValido }-${ diaValido }T13:00:00.000Z`
+    const fechatrasm = new Date(fechaString)
     
     const dir = path.join(__dirname, '..', 'storage', 'ANDE_Informe_Reclamos.xlsx')
 
-    const reclamo = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [dmednro, fechatrasm])
-    console.log('reclamo', reclamo)
+    const reclamo = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [dmednro, fechatrasm.toISOString().substr(0, 10)])
 
     var workbook = new Excel.Workbook()
     workbook = await workbook.xlsx.readFile(dir)
@@ -126,6 +158,7 @@ controllerReclamos.informeXLSX_Reclamos = async (req, res) => {
 
 controllerReclamos.add = async (req, res) => {
     const {reclamo} = req.body
+    let respuesta = null
 
     try {
         // clone de los datos
@@ -144,52 +177,71 @@ controllerReclamos.add = async (req, res) => {
                 && verificacionDeCaracteres(reclamoRes.NROOTRADE))
             {
                 // VERIFICAMOS SI LOS DATOS A AGREGAR ESTAN DISPONIBLES
-                const row = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes.DMEDNRO, reclamoRes.FECHATRASM])
+                const fechaString = reclamoRes.FECHATRASM.toISOString().substr(0, 10)
+                const row = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes.DMEDNRO, fechaString])
 
                 // SI ESTA DISPOBIBLE LOS DATOS A AGREGAR
-                if(row.length == 0){
-                    const result = await pool.query('INSERT INTO reclamos SET ?', [reclamoRes])
-                    
-                    res.status(200).json({
+                if ( !row.length ) {
+                    const reclamo = await Reclamo.agregarReclamo( reclamoRes )
+
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
-                        mensaje: 'Se ha registrado un reclamo',
-                        respuesta: result
+                        mensaje: 'Se ha registrado de forma exitosa el Reclamo.',
+                        resultado: reclamo
                     })
+    
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
 
                 // SINO ESTA DISPOBIBLE LOS DATOS A AGREGAR
                 } else {
-                    res.json({
+                    respuesta = new Respuesta({
+                        status: 400,
                         codigo: 'Error',
                         mensaje: 'Ya existe este reclamo'
                     })
+
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
                 }
             
             } else {
                 // NO SE MODIFICA LOS DATOS SI ES QUE TIENE CARACTERES ESPECIALES COMO
                 // / \
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No puede agregar datos con / \\.\nFavor usar -'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
             }
 
         } else {
             // SI NO EXISTE ALGUNO DE LOS DATOS IMPORTANTES QUE
             // IDENTIFICA A UN RECLAMO
             // NO SE AGREGA NADA
-            res.json({
+            respuesta = new Respuesta({
+                status: 400,
                 codigo: 'Error',
                 mensaje: 'Debe ingresar los datos de DMEDNRO, FECHATRASM'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
     } catch (error) {
         console.log('error', error)
 
-        res.json({
-            codigo: 'Error0001',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
-            respuesta: error
+            resultado: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
@@ -197,17 +249,18 @@ controllerReclamos.update = async (req, res) => {
     const {reclamo} = req.body
     const {dmednro, dia, mes, anho} = req.params
 
-    console.log('reclamo', reclamo)
-    const fecha = anho + '/' + mes + '/' + dia
-    const fechatrasm = new Date(fecha)
+    let anhoValido = anho
+    let mesValido = mes.length == 1 ? `0${mes}` : mes
+    let diaValido = dia.length == 1 ? `0${dia}` : dia
+    let fechaString = `${ anhoValido }-${ mesValido }-${ diaValido }T13:00:00.000Z`
+    const fechatrasm = new Date(fechaString)
+    let respuesta = null
     
     try {
         let reclamoRes = JSON.parse(JSON.stringify(reclamo))
-        console.log('reclamoRes1', reclamoRes)
 
         // quitamos los espacios de los costados y saltos de linea
         reclamoRes = dataConversionReclamos(reclamoRes)
-        console.log('reclamoRes2', reclamoRes)
 
         // VERIFICACION DE QUE EXISTA ESTOS DATOS IMPORTANTES QUE
         // IDENTIFICAN A UN RECLAMO
@@ -219,49 +272,63 @@ controllerReclamos.update = async (req, res) => {
                 && verificacionDeCaracteres(reclamoRes.NROOTRADE))
             {
                 // VERIFICAMOS SI LOS DATOS A MODIFICAR ESTAN DISPONIBLES
-                const row = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes.DMEDNRO, reclamoRes.FECHATRASM])
+                const fechaString = reclamoRes.FECHATRASM.toISOString().substr(0, 10)
+                const row = await pool.query('SELECT * FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes.DMEDNRO, fechaString])
 
                 // SI ESTA DISPOBIBLE LOS DATOS A MODIFICAR
-                if(row.length == 0){
-                    const updated = await pool.query('UPDATE reclamos SET ? WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes, dmednro, fechatrasm])
-                    res.json({
+                if ( !row.length ) {
+                    const updated = await Reclamo.actualizarReclamo( reclamoRes, dmednro, fechatrasm )
+
+                    respuesta = new Respuesta({
+                        status: 200,
                         codigo: 'Exito',
                         mensaje: 'Se ha modificado un reclamo',
-                        respuesta: updated
+                        resultado: updated
                     })
 
+                    return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
 
                 } else {
                     // SINO ESTA DISPOBIBLE LOS DATOS A MODIFICAR.
 
                     // SI LOS DATOS NO DISPONIBLES SON DE LOS DATOS QUE QUEREMOS
                     // MODIFICAR, SE PROCEDE A LA MODIFICACION.
-                    if(dmednro == reclamoRes.DMEDNRO && fechatrasm.getTime() == reclamoRes.FECHATRASM.getTime()){
-                        const updated = await pool.query('UPDATE reclamos SET ? WHERE DMEDNRO = ? AND FECHATRASM = ?', [reclamoRes, dmednro, fechatrasm])
-                        
-                        res.json({
+                    if ( dmednro == reclamoRes.DMEDNRO && fechatrasm.toISOString().substr(0, 10) == reclamoRes.FECHATRASM.toISOString().substr(0, 10) ) {
+                        const updated = await Reclamo.actualizarReclamo( reclamoRes, dmednro, fechatrasm )
+
+                        respuesta = new Respuesta({
+                            status: 200,
                             codigo: 'Exito',
                             mensaje: 'Se ha modificado un reclamo',
-                            respuesta: updated
+                            resultado: updated
                         })
+    
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
 
                     }else {
                         // SI LOS DATOS NO DISPONIBLES NO SON DE LOS DATOS QUE QUEREMOS
                         // MODIFICAR (EN ESTE CASO SI SON DE OTROS DATOS NO RELACIONADOS)
                         // NO SE PROCEDE A LA MODIFICACION PORQUE YA EXISTE OTRO.
-                        res.json({
+                        respuesta = new Respuesta({
+                            status: 400,
                             codigo: 'Error',
                             mensaje: 'Ya existe este reclamo'
                         })
+    
+                        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
                     }
                 }
             } else {
                 // NO SE MODIFICA LOS DATOS SI ES QUE TIENE CARACTERES ESPECIALES COMO
                 // / \
-                res.json({
+                respuesta = new Respuesta({
+                    status: 400,
                     codigo: 'Error',
                     mensaje: 'No puede agregar datos con / \\.\nFavor usar -'
                 })
+
+                return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
             }
 
 
@@ -269,41 +336,61 @@ controllerReclamos.update = async (req, res) => {
             // SI NO EXISTE ALGUNO DE LOS DATOS IMPORTANTES QUE
             // IDENTIFICA A UN RECLAMO
             // NO SE AGREGA NADA
-            res.json({
+            respuesta = new Respuesta({
+                status: 400,
                 codigo: 'Error',
                 mensaje: 'Debe ingresar los datos de DMEDNRO, FECHATRASM'
             })
+
+            return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
         }
 
     } catch (error) {
-        res.status(500).json({
-            codigo: 'Error0001',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
             respuesta: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 
 controllerReclamos.delete = async (req, res) => {
     const {dmednro, dia, mes, anho} = req.params
 
-    const fecha = anho + '/' + mes + '/' + dia
-    const fechatrasm = new Date(fecha)
+    let anhoValido = anho
+    let mesValido = mes.length == 1 ? `0${mes}` : mes
+    let diaValido = dia.length == 1 ? `0${dia}` : dia
+    let fechaString = `${ anhoValido }-${ mesValido }-${ diaValido }T13:00:00.000Z`
+    const fechatrasm = new Date(fechaString)
+    let respuesta = null
 
     try {
-        const deleted = await pool.query('DELETE FROM reclamos WHERE DMEDNRO = ? AND FECHATRASM = ?', [dmednro, fechatrasm])
-        
-        res.json({
+        const deleted = await Reclamo.eliminarReclamo( dmednro, fechatrasm )
+
+        respuesta = new Respuesta({
+            status: 200,
             codigo: 'Exito',
-            mensaje: 'Se ha eliminado un reclamo',
-            respuesta: await deleted
+            mensaje: 'Se ha eliminado un reclamo.',
+            respuesta: deleted
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+        
     } catch (error) {
-        res.json({
-            codigo: 'Error0000',
+        respuesta = new Respuesta({
+            status: 500,
+            codigo: 'Error',
             mensaje: 'Hubo un problema',
             respuesta: error
         })
+
+        return res.status( respuesta.getStatusCode() ).json( respuesta.getRespuesta() )
+
     }
 }
 

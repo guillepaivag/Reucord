@@ -15,19 +15,16 @@ import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-// import 'https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj'
-// import 'https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js'
 
 // AXIOS
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 
 // REUCORD API
-import apiReucord from './config/api'
+import apiReucord from './config/api-reucord'
 
 axios.defaults.baseURL = apiReucord.url
-// axios.defaults.baseURL = 'http://localhost:5001/sistemareclamosande2021/us-central1/app/api'
-// axios.defaults.baseURL = 'https://us-central1-sistemareclamosande2021.cloudfunctions.net/app/api'
+export const axiosReucord = axios
 
 Vue.use(VueAxios, axios)
 Vue.config.productionTip = false
@@ -45,8 +42,7 @@ firebase.auth().onAuthStateChanged((user) => {
       //   apellido: userDB.apellido,
       //   email: userDB.email
       // })
-      console.log('hay usuario')
-      console.log(userDB)
+      console.log('hay usuario', userDB)
     })
     // ...
   } else {

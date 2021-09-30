@@ -3,9 +3,7 @@
         <div v-if="system.loading">
             <loading></loading>
         </div>
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
+
         <div class="row mt-4" v-else>
             <div :class="system.operation === 'read' ? 'col-md-12' : 'col-md-9'">
                 <div>
@@ -198,13 +196,13 @@
                     </div>
                     
                     <!-- <label for="" class="">Trasmitido por:</label>
-                    <input type="text" class="form-control" :disabled="system.updated" v-model="pd.PDTRASMI" placeholder="Trasmitido por">
+                    <input type="text" class="form-control" :disabled="system.updated" v-model="ps.PDTRASMI" placeholder="Trasmitido por">
 
                     <h5 class="mt-3">Fecha trasmitida:</h5> 
-                    <b-calendar v-model="pd.PDFECHA" :disabled="system.updated" block locale="es-ES"></b-calendar>
+                    <b-calendar v-model="ps.PDFECHA" :disabled="system.updated" block locale="es-ES"></b-calendar>
 
                     <label for="" class="mt-3">Hora trasmitida:</label>
-                    <b-form-timepicker v-model="pd.HORATRAS" :disabled="system.updated" show-seconds locale="es"></b-form-timepicker> -->
+                    <b-form-timepicker v-model="ps.HORATRAS" :disabled="system.updated" show-seconds locale="es"></b-form-timepicker> -->
 
                     <hr>
 
@@ -231,7 +229,7 @@
                                 v-model="ps.FECHA_REC" 
                                 locale="es-ES"
                                 :disabled="system.updated || system.operation === 'read'" 
-                                ></b-calendar>
+                            ></b-calendar>
                         </div>
 
                     </div>
@@ -294,7 +292,7 @@
                             <div class="container">
                                 <div v-if=" system.operation != 'create' ">
                                     <button v-on:click="actionPS()" v-if="!system.updated" class="btn btn-outline-primary btn-block">Editar</button>
-                                    <button v-on:click="redirectPS()" v-if="system.updated" class="btn btn-outline-success btn-block">Elegir un PD</button>
+                                    <button v-on:click="redirectPS()" v-if="system.updated" class="btn btn-outline-success btn-block">Elegir un PS</button>
                                 </div>
                                 <div v-else>
                                     <button v-on:click="actionPS()" class="btn btn-outline-primary btn-block">Agregar</button>
@@ -337,13 +335,11 @@
 <script>
 // import psAdded from '@/components/ps/PsAdded'
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 
 export default {
     name: 'AddEditPS',
     components: {
         loading,
-        error,
         // psAdded
     },
     data() {
@@ -427,27 +423,21 @@ export default {
 
                 try {
                     // lista circuito
-                    const circuitoDB = await this.axios.post(`/eq23kvCircuitoPorLocal/${this.ps.LOCAL}`)
-                    if(!circuitoDB.data.codigo.includes('Error')){
-                        this.list.circuito = await circuitoDB.data.respuesta
-
-                        if(this.list.circuito.length != 0){
-                            // pushs los n primeros
-                            this.list.circuitoSubConjunto = []
-                            for(let i = 0; i < this.list.cantidadMostrar; i++){
-                                this.list.circuitoSubConjunto.push(this.list.circuito[i])
-                            }
-                        }else{
-                            this.ps.CIRCUITO = ''
-                            this.ps.EQUIPO = ''
-                            this.list.circuitoSubConjunto = []
-                            this.list.equipoSubConjunto = []
+                    this.list.circuito = await this.$store.dispatch('listaCircuitoPorLocal', {
+                        local: this.ps.LOCAL
+                    }) ?? []
+                    
+                    if(this.list.circuito.length != 0){
+                        // pushs los n primeros
+                        this.list.circuitoSubConjunto = []
+                        for(let i = 0; i < this.list.cantidadMostrar; i++){
+                            this.list.circuitoSubConjunto.push(this.list.circuito[i])
                         }
-                    } else {
-                        this.alternarAlertaVisible(true)
-                        this.mensaje.color = 'alert-danger'
-                        this.mensaje.titulo = 'Hubo un problema'
-                        this.mensaje.msg = circuitoDB.data.mensaje
+                    }else{
+                        this.ps.CIRCUITO = ''
+                        this.ps.EQUIPO = ''
+                        this.list.circuitoSubConjunto = []
+                        this.list.equipoSubConjunto = []
                     }
                     
                 } catch (error) {
@@ -480,26 +470,20 @@ export default {
                 }
 
                 // lista equipo
-                const equipoDB = await this.axios.post(`/eq23kvEquipoPorLocalCircuito/${this.ps.LOCAL}/${this.ps.CIRCUITO}`)
+                this.list.equipo = await this.$store.dispatch('listaEquipoPorLocalCircuito', {
+                    local: this.ps.LOCAL,
+                    circuito: this.ps.CIRCUITO
+                }) ?? []
                 
-                if(!equipoDB.data.codigo.includes('Error')){
-                    this.list.equipo = await equipoDB.data.respuesta
-
-                    if(this.list.equipo.length != 0){
-                        // pushs los n primeros
-                        this.list.equipoSubConjunto = []
-                        for(let i = 0; i < this.list.cantidadMostrar; i++){
-                            this.list.equipoSubConjunto.push(this.list.equipo[i])
-                        }
-                    }else{
-                        this.ps.EQUIPO = ''
-                        this.list.equipoSubConjunto = []
+                if(this.list.equipo.length != 0){
+                    // pushs los n primeros
+                    this.list.equipoSubConjunto = []
+                    for(let i = 0; i < this.list.cantidadMostrar; i++){
+                        this.list.equipoSubConjunto.push(this.list.equipo[i])
                     }
-                } else {
-                    this.alternarAlertaVisible(true)
-                    this.mensaje.color = 'alert-danger'
-                    this.mensaje.titulo = 'Hubo un problema'
-                    this.mensaje.msg = equipoDB.data.mensaje
+                }else{
+                    this.ps.EQUIPO = ''
+                    this.list.equipoSubConjunto = []
                 }
 
             }else{
@@ -542,8 +526,6 @@ export default {
             
             let conversion = this.trimAndConversion(psAux, psTrabajosAux)
             
-            console.log('conversion', conversion)
-            
             psAux = conversion.ps
             psTrabajosAux = conversion.psTrabajos
 
@@ -561,79 +543,69 @@ export default {
                         this.mensaje.lista = []
                         
                         if( this.system.operation === 'update' ){
-                            const res = await this.axios.put(`/psUpdate/${this.params.REUFECHA}/${this.params.REUNRO}/${this.params.ITEM}`, {ps: psAux, psTrabajos: psTrabajosAux})
+                            const res = await this.$store.dispatch('actualizarProgramacionSemanal', {
+                                params: this.params,
+                                ps: psAux, 
+                                psTrabajos: psTrabajosAux
+                            })
                         
-                            if(!res.data.codigo.includes('Error')) {
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Nuevo pedido'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.ps.REUFECHA)
-                                this.mensaje.lista.push(jsonDataNew.ps.REUNRO)
-                                this.mensaje.lista.push(jsonDataNew.ps.ITEM)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Nuevo pedido'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(psAux.REUFECHA)
+                            this.mensaje.lista.push(psAux.REUNRO)
+                            this.mensaje.lista.push(psAux.ITEM)
 
-                                this.alternarAlertaVisible(true)
+                            this.alternarAlertaVisible(true)
 
-                                this.system.updated = true
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se agrego el pedido'
-                                this.mensaje.msg = res.data.mensaje
-                            }
+                            this.system.updated = true
                         }else {
-                            const res = await this.axios.post('/psAdd', {ps: psAux, psTrabajos: psTrabajosAux})
+                            const res = await this.$store.dispatch('agregarProgramacionSemanal', {
+                                ps: psAux, 
+                                psTrabajos: psTrabajosAux
+                            })
                         
-                            if(!res.data.codigo.includes('Error')){
-                                const jsonDataNew = JSON.parse(res.config.data)
-                                this.mensaje.color = 'alert-success'
-                                this.mensaje.titulo = 'Nuevo pedido'
-                                this.mensaje.msg = res.data.mensaje
-                                
-                                this.mensaje.lista.push(jsonDataNew.ps.REUFECHA)
-                                this.mensaje.lista.push(jsonDataNew.ps.REUNRO)
-                                this.mensaje.lista.push(jsonDataNew.ps.ITEM)
+                            this.mensaje.color = 'alert-success'
+                            this.mensaje.titulo = 'Nuevo pedido'
+                            this.mensaje.msg = res.mensaje
+                            
+                            this.mensaje.lista.push(psAux.REUFECHA)
+                            this.mensaje.lista.push(psAux.REUNRO)
+                            this.mensaje.lista.push(psAux.ITEM)
 
-                                this.alternarAlertaVisible(true)
+                            this.alternarAlertaVisible(true)
 
-                                this.system.psAdded.push({
-                                    REUFECHA: jsonDataNew.ps.REUFECHA,
-                                    REUNRO: jsonDataNew.ps.REUNRO,
-                                    ITEM: jsonDataNew.ps.ITEM,
-                                })
+                            this.system.psAdded.push({
+                                REUFECHA: psAux.REUFECHA,
+                                REUNRO: psAux.REUNRO,
+                                ITEM: psAux.ITEM,
+                            })
 
-                                this.ps = {
-                                    REUFECHA: null,
-                                    REUNRO: null,
-                                    ITEM: null,
-                                    LOCAL: null,
-                                    CIRCUITO: null,
-                                    EQUIPO: null,
-                                    TRABAJO: null,
-                                    AUT: null,
-                                    ESTADO: null,
-                                    SUSMOD: null,
-                                    OBSERVAC: null,
-                                    RESULTADO: null,
-                                    RESPONSABLE: null,
-                                    AMPLIACION: null,
-                                    NRO_REC: null,
-                                    FECHA_REC: null
-                                }
-
-                                this.psTrabajos = []
-                            } else {
-                                this.alternarAlertaVisible(true)
-                                this.mensaje.color = 'alert-danger'
-                                this.mensaje.titulo = 'No se agrego el pedido'
-                                this.mensaje.msg = res.data.mensaje
+                            this.ps = {
+                                REUFECHA: null,
+                                REUNRO: null,
+                                ITEM: null,
+                                LOCAL: null,
+                                CIRCUITO: null,
+                                EQUIPO: null,
+                                TRABAJO: null,
+                                AUT: null,
+                                ESTADO: null,
+                                SUSMOD: null,
+                                OBSERVAC: null,
+                                RESULTADO: null,
+                                RESPONSABLE: null,
+                                AMPLIACION: null,
+                                NRO_REC: null,
+                                FECHA_REC: null
                             }
+
+                            this.psTrabajos = []
                         }
 
                     } catch (error) {
                         console.log(error)
-                        this.system.error = true
                     }
                 } else {
                     this.alternarAlertaVisible(true)
@@ -715,64 +687,48 @@ export default {
                 this.system.operation = 'read'
             }
 
-            console.log('this.system.operation', this.system.operation)
-
             if ( this.system.operation != 'read' ) {
                 // lista locales
-                const localesDB = await this.axios.post('/locales')
-                if(!localesDB.data.codigo.includes('Error')){
-                    this.list.locales = await localesDB.data.respuesta
-
-                    // pushs los n primeros
-                    for(let i = 0; i < this.list.cantidadMostrar; i++){
-                        this.list.localesSubConjunto.push(this.list.locales[i])
-                    }
-
-                }else {
-                    this.system.error = true
-                    console.log(localesDB.data.respuesta)
+                this.list.locales = await this.$store.dispatch('listaLocales') ?? []
+                
+                // pushs los n primeros
+                for(let i = 0; i < this.list.cantidadMostrar; i++){
+                    this.list.localesSubConjunto.push(this.list.locales[i])
                 }
             }
 
             if ( this.system.operation != 'create' ) {
                 // obtenemos los datos a modificar
-                let aux = await this.axios.post(`/psOne/${this.params.REUFECHA}/${this.params.REUNRO}/${this.params.ITEM}`)
+                this.ps = await this.$store.dispatch('getPs', {
+                    reufecha: this.params.REUFECHA,
+                    reunro: this.params.REUNRO,
+                    item: this.params.ITEM
+                })
                 
-                if(!aux.data.codigo.includes('Error')){
-                    this.ps = aux.data.respuesta[0]
-
-                    // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
-                    if(this.ps.FECHA_REC){
-                        this.ps.FECHA_REC = this.ps.FECHA_REC.substring(0, 10)
-                    }
-        
-                } else {
-                    this.system.error = true
-                    console.log(aux.data.respuesta)
+                // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
+                if(this.ps.FECHA_REC){
+                    this.ps.FECHA_REC = this.ps.FECHA_REC.substring(0, 10)
                 }
 
-                aux = await this.axios.post(`/psOneTrabajos/${this.params.REUFECHA}/${this.params.REUNRO}/${this.params.ITEM}`)
-                if(!aux.data.codigo.includes('Error')){
-                    this.psTrabajos = aux.data.respuesta
+                this.psTrabajos = await this.$store.dispatch('getPsTrabajo', {
+                    reufecha: this.params.REUFECHA,
+                    reunro: this.params.REUNRO,
+                    item: this.params.ITEM
+                })
 
-                    // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
-                    for (let i = 0; i < this.psTrabajos.length; i++) {
-                        const element = this.psTrabajos[i];
-                        
-                        if(this.psTrabajos[i].FECHATRABA){
-                            this.psTrabajos[i].FECHATRABA = element.FECHATRABA.substring(0, 10)
-                        }
-
+                // CONVERTIR LAS FECHAS PARA QUE RECONOZCA EL CALENDARIO
+                for (let i = 0; i < this.psTrabajos.length; i++) {
+                    const element = this.psTrabajos[i];
+                    
+                    if(this.psTrabajos[i].FECHATRABA){
+                        this.psTrabajos[i].FECHATRABA = element.FECHATRABA.substring(0, 10)
                     }
-                } else {
-                    this.system.error = true
-                    console.log(aux.data.respuesta)
+
                 }
 
             }
 
         } catch (error) {
-            this.system.error = true
             console.log(error)
         } finally {
             this.system.loading = false

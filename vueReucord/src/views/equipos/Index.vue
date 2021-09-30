@@ -4,9 +4,6 @@
             <loading></loading>
         </div>
         
-        <div v-else-if="system.error">
-            <error></error>
-        </div>
         <div class="container" v-else>
             <hr class="mt-4">
             <div class="row mb-3">
@@ -15,7 +12,7 @@
                     <input type="text" 
                     name="local"
                     v-on:keyup="filtro()"
-                    v-model="eq23kv.LOCAL" 
+                    v-model="eq23kvInput.LOCAL" 
                     class="form-control" 
                     placeholder="Local">
 
@@ -23,7 +20,7 @@
                     <input type="text" 
                     name="circuito"
                     v-on:keyup="filtro()"
-                    v-model="eq23kv.CIRCUITO" 
+                    v-model="eq23kvInput.CIRCUITO" 
                     class="form-control" 
                     placeholder="Circuito">
 
@@ -31,7 +28,7 @@
                     <input type="text" 
                     name="equipo"
                     v-on:keyup="filtro()"
-                    v-model="eq23kv.EQUIPO" 
+                    v-model="eq23kvInput.EQUIPO" 
                     class="form-control" 
                     placeholder="Equipo">
 
@@ -39,7 +36,7 @@
                     <input type="text"
                     name="barra"
                     v-on:keyup="filtro()"
-                    v-model="eq23kv.BARRA" 
+                    v-model="eq23kvInput.BARRA" 
                     class="form-control" 
                     placeholder="Barra">
 
@@ -62,6 +59,11 @@
                         class="btn btn-outline-primary btn-block mt-3"
                         to="/equipos/analisis"
                     >Analisis de equipos</b-button>
+
+                    <b-button 
+                        class="btn btn-outline-primary btn-block mt-3"
+                        to="/equipos/trabajos"
+                    >Trabajos</b-button>
 
                     <b-sidebar
                     id="sidebar-backdrop"
@@ -134,16 +136,16 @@
                 </div>
 
                 <table class="table table-hover table-responsive-xl mt-3">
-                <thead>
-                    <tr>
-                    <th scope="col">N°</th>
-                    <th scope="col">LOCAL</th>
-                    <th scope="col">CIRCUITO</th>
-                    <th scope="col">EQUIPO</th>
-                    <th scope="col">BARRA</th>
-                    <th scope="col">ACCIONES</th>
-                    </tr>
-                </thead>
+                    <thead>
+                        <tr>
+                        <th scope="col">N°</th>
+                        <th scope="col">LOCAL</th>
+                        <th scope="col">CIRCUITO</th>
+                        <th scope="col">EQUIPO</th>
+                        <th scope="col">BARRA</th>
+                        <th scope="col">ACCIONES</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr class="table-secondary" 
                             v-for="(dato, index) in datos" :key="index"
@@ -169,16 +171,16 @@
                     <hr>
                         <ul>
                             <li>
-                                Local: {{eq23kvAux.LOCAL}}
+                                Local: {{eq23kvDatos.LOCAL}}
                             </li>
                             <li>
-                                Circuito: {{eq23kvAux.CIRCUITO}}
+                                Circuito: {{eq23kvDatos.CIRCUITO}}
                             </li>
                             <li>
-                                Equipo: {{eq23kvAux.EQUIPO}}
+                                Equipo: {{eq23kvDatos.EQUIPO}}
                             </li>
                             <li>
-                                Barra: {{eq23kvAux.BARRA}}
+                                Barra: {{eq23kvDatos.BARRA}}
                             </li>
                         </ul>
                     <hr>
@@ -188,11 +190,11 @@
                 </b-modal>
                 <b-modal ref="my-modal" hide-footer title="Validación">
                     <div class="d-block text-center">
-                        <p class="h2">{{eq23kvAux.LOCAL}}</p>
+                        <p class="h2">{{eq23kvDatos.LOCAL}}</p>
                     </div>
                     <hr>
                     Escriba el local para eliminar:
-                    <input type="text" v-model="eq23kvAux.confirmacionEliminacion" class="form-control mt-2" placeholder="LOCAL">
+                    <input type="text" v-model="eq23kvDatos.confirmacionEliminacion" class="form-control mt-2" placeholder="LOCAL">
                     <hr>
                     <div class="container">
                         <div class="row">
@@ -219,7 +221,6 @@
 
 <script>
 import loading from '@/components/Loading'
-import error from '@/components/Error'
 import XLSX from 'xlsx'
 
 export default {
@@ -228,17 +229,16 @@ export default {
         return {
             system: {
                 loading: true,
-                error: false,
             },
             tipoOrd: 'Ascendente',
             nombreExcel: '',
-            eq23kv: {
+            eq23kvInput: {
                 LOCAL: '',
                 CIRCUITO: '',
                 EQUIPO: '',
                 BARRA: ''
             },
-            eq23kvAux: {
+            eq23kvDatos: {
                 LOCAL: '',
                 CIRCUITO: '',
                 EQUIPO: '',
@@ -255,7 +255,6 @@ export default {
     },
     components: {
         loading,
-        error
     },
     methods: {
         getStart(){
@@ -269,7 +268,7 @@ export default {
             return this.perPage*this.currentPage-1
         },
         cargarDatos(dato, index){
-            this.eq23kv = {
+            this.eq23kvInput = {
                 LOCAL: dato.LOCAL,
                 CIRCUITO: dato.CIRCUITO,
                 EQUIPO: dato.EQUIPO,
@@ -284,26 +283,25 @@ export default {
         },
         async mostrarTodo(){
             try {
-                const res = await this.axios.post('/eq23kv')
-                if(!res.data.codigo.includes('Error')){
-                    this.datosTotal = res.data.respuesta
-                    this.datosOp = this.datosTotal
-                } else {
-                    console.log(res.data.mensaje)
-                    console.log(res.data.respuesta)
-                    this.system.error = true
-                }
+                const res = await this.$store.dispatch('listaEquipos')
+                
+                this.datosTotal = res
+                this.datosOp = res
+
             } catch (error) {
                 console.log(error)
+                this.$store.dispatch('setError', error)
+            } finally {
+                this.system.loading = false
             }
         },
         filtro(){
             this.datosOp = []
             let contiene = []
-            if(!(this.eq23kv.LOCAL || 
-                this.eq23kv.CIRCUITO || 
-                this.eq23kv.EQUIPO || 
-                this.eq23kv.BARRA)
+            if(!(this.eq23kvInput.LOCAL || 
+                this.eq23kvInput.CIRCUITO || 
+                this.eq23kvInput.EQUIPO || 
+                this.eq23kvInput.BARRA)
             ){
                 this.mostrarTodo()
             }else{
@@ -311,9 +309,9 @@ export default {
                     let dt = this.datosTotal[i]
                     contiene = []
 
-                    if(this.eq23kv.LOCAL){
+                    if(this.eq23kvInput.LOCAL){
                         if(dt.LOCAL){
-                            if(dt.LOCAL.includes(this.eq23kv.LOCAL)){
+                            if(dt.LOCAL.includes(this.eq23kvInput.LOCAL)){
                                 contiene.push(1)
                             }else{
                                 contiene.push(-1)
@@ -323,9 +321,9 @@ export default {
                         contiene.push(0)
                     }
 
-                    if(this.eq23kv.CIRCUITO){
+                    if(this.eq23kvInput.CIRCUITO){
                         if(dt.CIRCUITO){
-                            if(dt.CIRCUITO.includes(this.eq23kv.CIRCUITO)){
+                            if(dt.CIRCUITO.includes(this.eq23kvInput.CIRCUITO)){
                                 contiene.push(1)
                             }else{
                                 contiene.push(-1)
@@ -335,9 +333,9 @@ export default {
                         contiene.push(0)
                     }
 
-                    if(this.eq23kv.EQUIPO){
+                    if(this.eq23kvInput.EQUIPO){
                         if(dt.EQUIPO){
-                            if(dt.EQUIPO.includes(this.eq23kv.EQUIPO)){
+                            if(dt.EQUIPO.includes(this.eq23kvInput.EQUIPO)){
                                 contiene.push(1)
                             }else{
                                 contiene.push(-1)
@@ -347,9 +345,9 @@ export default {
                         contiene.push(0)
                     }
 
-                    if(this.eq23kv.BARRA){
+                    if(this.eq23kvInput.BARRA){
                         if(dt.BARRA){
-                            if(dt.BARRA.includes(this.eq23kv.BARRA)){
+                            if(dt.BARRA.includes(this.eq23kvInput.BARRA)){
                                 contiene.push(1)
                             }else{
                                 contiene.push(-1)
@@ -369,11 +367,11 @@ export default {
         },
         showModal(dato, index) {
             this.indexEquipo = index
-            this.eq23kvAux.confirmacionEliminacion = ''
-            this.eq23kvAux.LOCAL = dato.LOCAL
-            this.eq23kvAux.CIRCUITO = dato.CIRCUITO
-            this.eq23kvAux.EQUIPO = dato.EQUIPO
-            this.eq23kvAux.BARRA = dato.BARRA
+            this.eq23kvDatos.confirmacionEliminacion = ''
+            this.eq23kvDatos.LOCAL = dato.LOCAL
+            this.eq23kvDatos.CIRCUITO = dato.CIRCUITO
+            this.eq23kvDatos.EQUIPO = dato.EQUIPO
+            this.eq23kvDatos.BARRA = dato.BARRA
             this.$refs['my-modal'].show()
         },
         hideModal() {
@@ -381,10 +379,10 @@ export default {
         },
         showModalVista(dato, index) {
             this.indexEquipo = index
-            this.eq23kvAux.LOCAL = dato.LOCAL
-            this.eq23kvAux.CIRCUITO = dato.CIRCUITO
-            this.eq23kvAux.EQUIPO = dato.EQUIPO
-            this.eq23kvAux.BARRA = dato.BARRA
+            this.eq23kvDatos.LOCAL = dato.LOCAL
+            this.eq23kvDatos.CIRCUITO = dato.CIRCUITO
+            this.eq23kvDatos.EQUIPO = dato.EQUIPO
+            this.eq23kvDatos.BARRA = dato.BARRA
             this.$refs['equipoVista'].show()
         },
         hideModalVista() {
@@ -392,30 +390,22 @@ export default {
         },
         async eliminarEquipo(){
             try {
-                const res = await this.axios.delete(`/eq23kvDelete/${this.eq23kvAux.LOCAL}/${this.eq23kvAux.CIRCUITO}/${this.eq23kvAux.EQUIPO}`)
-                if(!res.data.codigo.includes('Error')){
-                    console.log(res)
-                    this.hideModal()
-                    this.mostrarTodo()
-                    // this.datosTotal.splice(this.indexEquipo, 1)
-                    // this.datosOp = this.datosTotal
-                    this.actualizarDatos()
-                } else {
-                    console.log('Problemas al eliminar')
-                }
+                
+                const res = await this.$store.dispatch('eliminarEquipo', {
+                    local: this.eq23kvDatos.LOCAL,
+                    circuito: this.eq23kvDatos.CIRCUITO,
+                    equipo: this.eq23kvDatos.EQUIPO
+                })
+
+                this.hideModal()
+                this.mostrarTodo()
+                this.actualizarDatos()
                 
             } catch (error) {
                 console.log(error)
             }
         },
         goToEditEq23kv(eq23kv){
-            // this.setEquipo({
-            //     local: eq23kv.LOCAL,
-            //     circuito: eq23kv.CIRCUITO,
-            //     equipo: eq23kv.EQUIPO,
-            //     barra: eq23kv.BARRA
-            // })
-            // this.$router.push('/equipos/modificarEquipo')
             this.$router.push({name: 'Equipos.Edit', params: {
                 local: eq23kv.LOCAL,
                 circuito: eq23kv.CIRCUITO,
@@ -423,7 +413,7 @@ export default {
             }})
         },
         exportExcel: function () {
-            if(this.nombreExcel){
+            if( this.nombreExcel ){
                 let data = XLSX.utils.json_to_sheet(this.datosOp)
                 const workbook = XLSX.utils.book_new()
                 const filename = this.nombreExcel
@@ -433,71 +423,9 @@ export default {
 
             }
         },
-        sort(sortFor){
-            // let upward = this.tipoOrd === 'Ascendente'
-            // var len  = this.datosOp.length
-            // var gapSize =  Math.floor(len/2)
-        
-            // while(gapSize > 0){
-            //     for(var i = gapSize; i < len; i++) {
-        
-            //         var temp = this.datosOp[i]
-            //         var j = i
-        
-            //         while(j >= gapSize && this.conditionUpward(this.datosOp[j - gapSize], temp, upward, sortFor)) {
-            //             this.datosOp[j] = this.datosOp[j - gapSize]
-            //             j -= gapSize
-            //         }
-            //         this.datosOp[j] = temp
-            //     }
-            //     gapSize = Math.floor(gapSize/2)
-            // }
-
-            // this.actualizarDatos()
-        },
-        conditionUpward(array, temp, upward, sortFor){
-            // console.log('entro para cambio')
-            // if(upward){
-            //     if(sortFor === 'LOCAL'){
-            //         return array.LOCAL > temp.LOCAL
-            //     }else if(sortFor === 'CIRCUITO'){
-            //         return array.CIRCUITO > temp.CIRCUITO
-            //     }else if(sortFor === 'EQUIPO'){
-            //         return array.EQUIPO > temp.EQUIPO
-            //     }else if(sortFor === 'BARRA'){
-            //         return array.BARRA > temp.BARRA
-            //     }
-                
-            // }else{
-            //     if(sortFor === 'LOCAL'){
-            //         return array.LOCAL < temp.LOCAL
-            //     }else if(sortFor === 'CIRCUITO'){
-            //         return array.CIRCUITO < temp.CIRCUITO
-            //     }else if(sortFor === 'EQUIPO'){
-            //         return array.EQUIPO < temp.EQUIPO
-            //     }else if(sortFor === 'BARRA'){
-            //         return array.BARRA < temp.BARRA
-            //     }
-            // }
-        }
     },
     async created() {
-        try {
-            const res = await this.axios.post('/eq23kv')
-            if(!res.data.codigo.includes('Error')){
-                this.datosTotal = res.data.respuesta
-                this.datosOp = this.datosTotal
-            } else {
-                console.log(res.data.mensaje)
-                console.log(res.data.respuesta)
-                this.system.error = true
-            }
-        } catch (error) {
-            this.system.error = true
-            console.log(error)
-        } finally {
-            this.system.loading = false
-        }
+        this.mostrarTodo()
     },
     beforeUpdate() {
         this.actualizarDatos()
@@ -507,7 +435,7 @@ export default {
             return this.datosOp.length
         },
         validacionEliminacion() {
-            return this.eq23kvAux.confirmacionEliminacion == this.eq23kvAux.LOCAL
+            return this.eq23kvDatos.confirmacionEliminacion == this.eq23kvDatos.LOCAL
         }
     }
 }
